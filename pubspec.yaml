@@ -61,12 +61,14 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_launcher_icons: ^0.9.2
+  flutter_launcher_icons: ^0.13.1
+  flutter_lints: ^5.0.0
 
-flutter icons:
+flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/images/app_icon.png"
+  image_path: "assets/images/logo.png"
+  remove_alpha_ios: true   for ios to remove the alpha channel from the image, which can help ensure that the icon looks correct on iOS devices. This is particularly important if your original image has transparency, as iOS icons typically do not support transparent backgrounds. By setting remove_alpha_ios to true, the package will automatically process the image to remove any alpha channel, resulting in a solid background for the iOS app icon.  This can help prevent issues with the icon appearing incorrectly or having unintended transparency when displayed on iOS devices. 
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
