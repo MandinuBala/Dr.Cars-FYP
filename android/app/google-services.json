@@ -1,0 +1,148 @@
+{
+  "project_info": {
+    "project_number": "158386662597",
+    "project_id": "dr-cars-4df08",
+    "storage_bucket": "dr-cars-4df08.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:158386662597:android:a5f09312d6f007615214ac",
+        "android_client_info": {
+          "package_name": "com.example.dr_cars"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "158386662597-5tjrqg1ipei2rk5dbnsctj5b0dm047as.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.dr_cars",
+            "certificate_hash": "575f37026f5b1c1e1d1cabb2b862846987a30ccc"
+          }
+        },
+        {
+          "client_id": "158386662597-8r94v7c6t4dajii2abg40ejtu08nkqti.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.dr_cars",
+            "certificate_hash": "57e568fa95b66b15ee05bd1915e9f4eaa83b5be6"
+          }
+        },
+        {
+          "client_id": "158386662597-b6f9nr9pkr75kin65arkjhqammb2aifn.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.dr_cars",
+            "certificate_hash": "b905e9f162aec27980fc0b0e32a65ad33e5c6c0f"
+          }
+        },
+        {
+          "client_id": "158386662597-jf55qbppifrb02h08c9ad4g7guve39kh.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.dr_cars",
+            "certificate_hash": "72f840e8cbcb3fb66544892f96104eb5b1361377"
+          }
+        },
+        {
+          "client_id": "158386662597-jgmudra71p8jsrjia6qsbdr7cis5j77q.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.dr_cars",
+            "certificate_hash": "82169478722f875716ad5b565ccbad840daffd3d"
+          }
+        },
+        {
+          "client_id": "158386662597-lkcbm029kdjj39vrcg9r2vohecs5kms6.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.dr_cars",
+            "certificate_hash": "87bcf71ed8f01f594a1a0249cc38e2118fce1371"
+          }
+        },
+        {
+          "client_id": "158386662597-qhv82hvtloafhhoaolfih0e43thjjc9a.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.dr_cars",
+            "certificate_hash": "98216f3def2f0963f463aa6da8a14035388eef04"
+          }
+        },
+        {
+          "client_id": "158386662597-trsvd8fphfmpqbvqrofv0d2grjvgcu68.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.dr_cars",
+            "certificate_hash": "dff980aaa889af5035400447df01f2bad49c71b0"
+          }
+        },
+        {
+          "client_id": "158386662597-uuqi10n45itr7f8lf4fupmcdm23p6m57.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.dr_cars",
+            "certificate_hash": "8087916f9eb0633cf14b24c1ebd02b76120b9cb5"
+          }
+        },
+        {
+          "client_id": "158386662597-mdtkekcjemn21no9a0micgillvlet4pe.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBkBRaVzeq5t6rrEfJ8ksnlVu2mHzui0bY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "158386662597-mdtkekcjemn21no9a0micgillvlet4pe.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:158386662597:android:623210cd81259aa35214ac",
+        "android_client_info": {
+          "package_name": "com.example.dr_cars_fyp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "158386662597-uuqi10n45itr7f8lf4fupmcdm23p6m57.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.dr_cars_fyp",
+            "certificate_hash": "8087916f9eb0633cf14b24c1ebd02b76120b9cb5"
+          }
+        },
+        {
+          "client_id": "158386662597-mdtkekcjemn21no9a0micgillvlet4pe.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBkBRaVzeq5t6rrEfJ8ksnlVu2mHzui0bY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "158386662597-mdtkekcjemn21no9a0micgillvlet4pe.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

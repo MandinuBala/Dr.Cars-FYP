@@ -1,0 +1,194 @@
+Analyzing dr_cars_fyp...                                        
+
+warning - The include file 'package:flutter_lints/flutter.yaml' in 'C:\Users\balas\OneDrive\Documents\dr_cars_fyp\analysis_options.yaml' can't be found when analyzing 'C:\Users\balas\OneDrive\Documents\dr_cars_fyp' - analysis_options.yaml:10:10 - include_file_not_found
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/admin/pending_requests.dart' - lib\admin\dashboard\admin_dashboard_page.dart:1:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/admin/rejected_requests.dart' - lib\admin\dashboard\admin_dashboard_page.dart:2:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/main/signin.dart' - lib\admin\dashboard\admin_dashboard_page.dart:3:8 - uri_does_not_exist
+  error - The method 'SignInScreen' isn't defined for the type 'ServiceCenterApprovalPage' - lib\admin\dashboard\admin_dashboard_page.dart:26:59 - undefined_method
+  error - Invalid constant value - lib\admin\dashboard\admin_dashboard_page.dart:42:22 - invalid_constant
+  error - The method 'PendingRequestsTab' isn't defined for the type 'ServiceCenterApprovalPage' - lib\admin\dashboard\admin_dashboard_page.dart:42:22 - undefined_method
+  error - The values in a const list literal must be constants - lib\admin\dashboard\admin_dashboard_page.dart:42:22 - non_constant_list_element
+  error - The method 'RejectedRequestsTab' isn't defined for the type 'ServiceCenterApprovalPage' - lib\admin\dashboard\admin_dashboard_page.dart:42:44 - undefined_method
+  error - The values in a const list literal must be constants - lib\admin\dashboard\admin_dashboard_page.dart:42:44 - non_constant_list_element
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/interface/Service%20History.dart' - lib\admin\dashboard\vehicle_dashboard.dart:4:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/interface/dashboard.dart' - lib\admin\dashboard\vehicle_dashboard.dart:5:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/interface/mapscreen.dart' - lib\admin\dashboard\vehicle_dashboard.dart:6:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/interface/profile.dart' - lib\admin\dashboard\vehicle_dashboard.dart:7:8 - uri_does_not_exist
+  error - The method 'DashboardScreen' isn't defined for the type '_VehicleDashboardScreenState' - lib\admin\dashboard\vehicle_dashboard.dart:482:55 - undefined_method
+  error - The name 'DashboardScreen' isn't a class - lib\admin\dashboard\vehicle_dashboard.dart:555:61 - creation_with_non_type
+  error - The method 'MapScreen' isn't defined for the type '_VehicleDashboardScreenState' - lib\admin\dashboard\vehicle_dashboard.dart:560:55 - undefined_method
+  error - The name 'ProfileScreen' isn't a class - lib\admin\dashboard\vehicle_dashboard.dart:565:61 - creation_with_non_type
+  error - The method 'ServiceHistorypage' isn't defined for the type '_VehicleDashboardScreenState' - lib\admin\dashboard\vehicle_dashboard.dart:570:55 - undefined_method
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/interface/dashboard.dart' - lib\admin\ratings\rating.dart:1:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/interface/mapscreen.dart' - lib\admin\ratings\rating.dart:2:8 - uri_does_not_exist
+   info - 'ButtonBar' is deprecated and shouldn't be used. Use OverflowBar instead. This feature was deprecated after v3.21.0-10.0.pre - lib\admin\requests\rejected_requests_page.dart:72:19 - deprecated_member_use
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/interface/Service%20History.dart' - lib\appointments\appointments.dart:2:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/interface/dashboard.dart' - lib\appointments\appointments.dart:3:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/interface/mapscreen.dart' - lib\appointments\appointments.dart:4:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/interface/profile.dart' - lib\appointments\appointments.dart:5:8 - uri_does_not_exist
+warning - The declaration '_pickDate' isn't referenced - lib\appointments\appointments.dart:157:16 - unused_element
+warning - A value for optional parameter 'decoration' isn't ever given - lib\appointments\appointments.dart:463:22 - unused_element_parameter
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\appointments\appointments.dart:473:38 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\appointments\appointments.dart:563:58 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\appointments\appointments.dart:759:38 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\appointments\appointments.dart:813:38 - deprecated_member_use
+  error - The method 'DashboardScreen' isn't defined for the type '_AppointmentsPageState' - lib\appointments\appointments.dart:1170:63 - undefined_method
+  error - The method 'DashboardScreen' isn't defined for the type '_AppointmentsPageState' - lib\appointments\appointments.dart:1209:57 - undefined_method
+  error - The method 'MapScreen' isn't defined for the type '_AppointmentsPageState' - lib\appointments\appointments.dart:1215:57 - undefined_method
+  error - The method 'ServiceHistorypage' isn't defined for the type '_AppointmentsPageState' - lib\appointments\appointments.dart:1227:57 - undefined_method
+  error - The method 'ProfileScreen' isn't defined for the type '_AppointmentsPageState' - lib\appointments\appointments.dart:1233:57 - undefined_method
+   info - 'fetchSignInMethodsForEmail' is deprecated and shouldn't be used. fetchSignInMethodsForEmail() has been deprecated. Migrating off of this method is recommended as a security best-practice. Learn more in the Identity Platform documentation:  https://cloud.google.com/identity-platform/docs/admin/email-enumeration-protection - lib\auth\auth_service.dart:97:44 - deprecated_member_use
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/interface/dashboard.dart' - lib\auth\google_link.dart:1:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/admin/admin_home.dart' - lib\auth\google_link.dart:3:8 - uri_does_not_exist
+  error - The method 'DashboardScreen' isn't defined for the type '_GooglePasswordLinkPageState' - lib\auth\google_link.dart:49:18 - undefined_method
+  error - The method 'ServiceCenterApprovalPage' isn't defined for the type '_GooglePasswordLinkPageState' - lib\auth\google_link.dart:53:18 - undefined_method
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/interface/dashboard.dart' - lib\auth\google_profile_completion.dart:3:8 - uri_does_not_exist
+  error - The method 'DashboardScreen' isn't defined for the type '_GoogleProfileCompletionPageState' - lib\auth\google_profile_completion.dart:91:49 - undefined_method
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/interface/dashboard.dart' - lib\auth\signin.dart:2:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/main/auth_service.dart' - lib\auth\signin.dart:3:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/main/signup_selection.dart' - lib\auth\signin.dart:4:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/main/google_profile_completion.dart' - lib\auth\signin.dart:8:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/admin/admin_home.dart' - lib\auth\signin.dart:9:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/main/google_link.dart' - lib\auth\signin.dart:10:8 - uri_does_not_exist
+  error - Undefined class 'AuthService' - lib\auth\signin.dart:23:9 - undefined_class
+  error - The method 'AuthService' isn't defined for the type '_SignInScreenState' - lib\auth\signin.dart:23:36 - undefined_method
+  error - The method 'DashboardScreen' isn't defined for the type '_SignInScreenState' - lib\auth\signin.dart:84:24 - undefined_method
+  error - The method 'ServiceCenterApprovalPage' isn't defined for the type '_SignInScreenState' - lib\auth\signin.dart:88:24 - undefined_method
+  error - The method 'DashboardScreen' isn't defined for the type '_SignInScreenState' - lib\auth\signin.dart:90:24 - undefined_method
+   info - 'fetchSignInMethodsForEmail' is deprecated and shouldn't be used. fetchSignInMethodsForEmail() has been deprecated. Migrating off of this method is recommended as a security best-practice. Learn more in the Identity Platform documentation:  https://cloud.google.com/identity-platform/docs/admin/email-enumeration-protection - lib\auth\signin.dart:194:12 - deprecated_member_use
+  error - The method 'GooglePasswordLinkPage' isn't defined for the type '_SignInScreenState' - lib\auth\signin.dart:218:26 - undefined_method
+  error - The method 'GoogleProfileCompletionPage' isn't defined for the type '_SignInScreenState' - lib\auth\signin.dart:240:24 - undefined_method
+  error - The method 'DashboardScreen' isn't defined for the type '_SignInScreenState' - lib\auth\signin.dart:252:20 - undefined_method
+  error - The method 'ServiceCenterApprovalPage' isn't defined for the type '_SignInScreenState' - lib\auth\signin.dart:256:20 - undefined_method
+  error - The method 'DashboardScreen' isn't defined for the type '_SignInScreenState' - lib\auth\signin.dart:258:20 - undefined_method
+  error - The method 'SignupSelection' isn't defined for the type '_SignInScreenState' - lib\auth\signin.dart:477:49 - undefined_method
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/main/signin.dart' - lib\auth\signup.dart:2:8 - uri_does_not_exist
+  error - The method 'SignInScreen' isn't defined for the type '_SignUpPageState' - lib\auth\signup.dart:186:51 - undefined_method
+  error - The method 'SignInScreen' isn't defined for the type '_SignUpPageState' - lib\auth\signup.dart:252:51 - undefined_method
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/main/check_service_acc_availability.dart' - lib\auth\signup_selection.dart:1:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/main/signup.dart' - lib\auth\signup_selection.dart:2:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/main/signup_service.dart' - lib\auth\signup_selection.dart:3:8 - uri_does_not_exist
+  error - The method 'SignUpPage' isn't defined for the type 'SignupSelection' - lib\auth\signup_selection.dart:26:59 - undefined_method
+  error - The method 'ServiceCenterRequestScreen' isn't defined for the type 'SignupSelection' - lib\auth\signup_selection.dart:40:43 - undefined_method
+  error - The method 'CheckRequestStatusPage' isn't defined for the type 'SignupSelection' - lib\auth\signup_selection.dart:55:43 - undefined_method
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/main/signin.dart' - lib\auth\welcome.dart:1:8 - uri_does_not_exist
+  error - The method 'SignInScreen' isn't defined for the type 'Welcome' - lib\auth\welcome.dart:33:63 - undefined_method
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/main/welcome.dart' - lib\main.dart:2:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/interface/dashboard.dart' - lib\main.dart:7:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/admin/admin_home.dart' - lib\main.dart:8:8 - uri_does_not_exist
+   info - 'MaterialStatePropertyAll' is deprecated and shouldn't be used. Use WidgetStatePropertyAll instead. Moved to the Widgets layer to make code available outside of Material. This feature was deprecated after v3.19.0-0.3.pre - lib\main.dart:101:28 - deprecated_member_use
+   info - 'MaterialStateProperty' is deprecated and shouldn't be used. Use WidgetStateProperty instead. Moved to the Widgets layer to make code available outside of Material. This feature was deprecated after v3.19.0-0.3.pre - lib\main.dart:105:21 - deprecated_member_use
+   info - 'MaterialState' is deprecated and shouldn't be used. Use WidgetState instead. Moved to the Widgets layer to make code available outside of Material. This feature was deprecated after v3.19.0-0.3.pre - lib\main.dart:107:31 - deprecated_member_use
+   info - 'MaterialStateProperty' is deprecated and shouldn't be used. Use WidgetStateProperty instead. Moved to the Widgets layer to make code available outside of Material. This feature was deprecated after v3.19.0-0.3.pre - lib\main.dart:111:21 - deprecated_member_use
+   info - 'MaterialState' is deprecated and shouldn't be used. Use WidgetState instead. Moved to the Widgets layer to make code available outside of Material. This feature was deprecated after v3.19.0-0.3.pre - lib\main.dart:113:31 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\main.dart:114:35 - deprecated_member_use
+  error - The name 'Welcome' isn't a class - lib\main.dart:187:27 - creation_with_non_type
+  error - The name 'DashboardScreen' isn't a class - lib\main.dart:192:24 - creation_with_non_type
+  error - The name 'ServiceCenterApprovalPage' isn't a class - lib\main.dart:196:24 - creation_with_non_type
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/interface/Service%20History.dart' - lib\map\map.dart:2:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/interface/dashboard.dart' - lib\map\map.dart:3:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/interface/profile.dart' - lib\map\map.dart:4:8 - uri_does_not_exist
+   info - 'fitBounds' is deprecated and shouldn't be used. Prefer `fitCamera` with a CameraFit.bounds() instead. This method has been changed to use the new `CameraFit` classes which allows different kinds of fit. This method is deprecated since v6 - lib\map\map.dart:77:22 - deprecated_member_use
+   info - 'FitBoundsOptions' is deprecated and shouldn't be used. Prefer `CameraFit.bounds` instead. This class has been renamed to clarify its meaning and is now a sublass of CameraFit to allow other fit types. This class is deprecated since v6 - lib\map\map.dart:79:18 - deprecated_member_use
+   info - 'Share' is deprecated and shouldn't be used. Use SharePlus instead - lib\map\map.dart:289:9 - deprecated_member_use
+   info - 'share' is deprecated and shouldn't be used. Use SharePlus.instance.share() instead - lib\map\map.dart:289:15 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\map\map.dart:352:36 - deprecated_member_use
+  error - The method 'DashboardScreen' isn't defined for the type '_MapScreenState' - lib\map\map.dart:510:55 - undefined_method
+   info - 'center' is deprecated and shouldn't be used. Prefer `initialCenter` instead. This option has been renamed to clarify its meaning. This option is deprecated since v6 - lib\map\map.dart:529:21 - deprecated_member_use
+   info - 'zoom' is deprecated and shouldn't be used. Prefer `initialZoom` instead. This option has been renamed to clarify its meaning. This option is deprecated since v6 - lib\map\map.dart:530:21 - deprecated_member_use
+   info - 'interactiveFlags' is deprecated and shouldn't be used. Prefer setting this in `interactionOptions`. This option is now part of `interactionOptions` to group all interaction related options. This option is deprecated since v6 - lib\map\map.dart:533:21 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\map\map.dart:550:31 - deprecated_member_use
+   info - 'center' is deprecated and shouldn't be used. Prefer `controller.camera.center`. This getter is now accessible via the camera. This getter is deprecated since v6 - lib\map\map.dart:668:64 - deprecated_member_use
+   info - 'zoom' is deprecated and shouldn't be used. Prefer `controller.camera.zoom`. This getter is now accessible via the camera. This getter is deprecated since v6 - lib\map\map.dart:668:87 - deprecated_member_use
+   info - 'center' is deprecated and shouldn't be used. Prefer `controller.camera.center`. This getter is now accessible via the camera. This getter is deprecated since v6 - lib\map\map.dart:680:64 - deprecated_member_use
+   info - 'zoom' is deprecated and shouldn't be used. Prefer `controller.camera.zoom`. This getter is now accessible via the camera. This getter is deprecated since v6 - lib\map\map.dart:680:87 - deprecated_member_use
+warning - The value of the local variable 'result' isn't used - lib\map\map.dart:820:25 - unused_local_variable
+   info - 'Share' is deprecated and shouldn't be used. Use SharePlus instead - lib\map\map.dart:843:17 - deprecated_member_use
+   info - 'share' is deprecated and shouldn't be used. Use SharePlus.instance.share() instead - lib\map\map.dart:843:23 - deprecated_member_use
+  error - The method 'DashboardScreen' isn't defined for the type '_MapScreenState' - lib\map\map.dart:908:90 - undefined_method
+  error - The method 'ServiceHistorypage' isn't defined for the type '_MapScreenState' - lib\map\map.dart:918:79 - undefined_method
+  error - The method 'ProfileScreen' isn't defined for the type '_MapScreenState' - lib\map\map.dart:921:79 - undefined_method
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/interface/Service%20History.dart' - lib\obd\OBD2.dart:366:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/interface/dashboard.dart' - lib\obd\OBD2.dart:367:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/interface/mapscreen.dart' - lib\obd\OBD2.dart:368:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/interface/profile.dart' - lib\obd\OBD2.dart:369:8 - uri_does_not_exist
+warning - The declaration '_clearTroubleCodes' isn't referenced - lib\obd\OBD2.dart:481:8 - unused_element
+  error - The method 'DashboardScreen' isn't defined for the type '_OBD2PageState' - lib\obd\OBD2.dart:747:49 - undefined_method
+  error - The method 'MapScreen' isn't defined for the type '_OBD2PageState' - lib\obd\OBD2.dart:752:49 - undefined_method
+  error - The method 'ServiceHistorypage' isn't defined for the type '_OBD2PageState' - lib\obd\OBD2.dart:757:49 - undefined_method
+  error - The method 'ProfileScreen' isn't defined for the type '_OBD2PageState' - lib\obd\OBD2.dart:762:49 - undefined_method
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/main/signin.dart' - lib\service\check_service_acc_availability.dart:2:8 - uri_does_not_exist
+  error - The method 'SignInScreen' isn't defined for the type '_CheckRequestStatusPageState' - lib\service\check_service_acc_availability.dart:154:53 - undefined_method
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\service\records_screen.dart:66:43 - deprecated_member_use
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/interface/dashboard.dart' - lib\service\service_history.dart:3:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/interface/mapscreen.dart' - lib\service\service_history.dart:4:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/interface/profile.dart' - lib\service\service_history.dart:5:8 - uri_does_not_exist
+  error - The name 'DashboardScreen' isn't a class - lib\service\service_history.dart:361:55 - creation_with_non_type
+  error - The method 'MapScreen' isn't defined for the type '_ServiceHistorypageState' - lib\service\service_history.dart:366:49 - undefined_method
+  error - The name 'ProfileScreen' isn't a class - lib\service\service_history.dart:378:55 - creation_with_non_type
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\service\service_history.dart:421:32 - deprecated_member_use
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/main/signin.dart' - lib\service\service_menu.dart:2:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'appointments_screen.dart' - lib\service\service_menu.dart:7:8 - uri_does_not_exist
+  error - The method 'AppointmentsScreen' isn't defined for the type 'HomeScreen' - lib\service\service_menu.dart:187:47 - undefined_method
+  error - The method 'SignInScreen' isn't defined for the type 'HomeScreen' - lib\service\service_menu.dart:198:63 - undefined_method
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/interface/dashboard.dart' - lib\service\service_records.dart:2:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/interface/profile.dart' - lib\service\service_records.dart:3:8 - uri_does_not_exist
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\service\service_records.dart:207:58 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\service\service_records.dart:256:58 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\service\service_records.dart:300:58 - deprecated_member_use
+  error - The name 'DashboardScreen' isn't a class - lib\service\service_records.dart:606:55 - creation_with_non_type
+  error - The name 'ProfileScreen' isn't a class - lib\service\service_records.dart:616:55 - creation_with_non_type
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/interface/dashboard.dart' - lib\settings\settings.dart:7:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/interface/mapscreen.dart' - lib\settings\settings.dart:8:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/interface/obd2.dart' - lib\settings\settings.dart:9:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/interface/service_history.dart' - lib\settings\settings.dart:10:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/interface/profile.dart' - lib\settings\settings.dart:11:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/main/signin.dart' - lib\settings\settings.dart:12:8 - uri_does_not_exist
+  error - The method 'SignInScreen' isn't defined for the type '_SettingsScreenState' - lib\settings\settings.dart:404:55 - undefined_method
+  error - The method 'SignInScreen' isn't defined for the type '_SettingsScreenState' - lib\settings\settings.dart:438:55 - undefined_method
+  error - The method 'DashboardScreen' isn't defined for the type '_SettingsScreenState' - lib\settings\settings.dart:732:49 - undefined_method
+  error - The method 'MapScreen' isn't defined for the type '_SettingsScreenState' - lib\settings\settings.dart:736:49 - undefined_method
+  error - The method 'OBD2Page' isn't defined for the type '_SettingsScreenState' - lib\settings\settings.dart:740:49 - undefined_method
+  error - The method 'ServiceHistoryPage' isn't defined for the type '_SettingsScreenState' - lib\settings\settings.dart:744:49 - undefined_method
+  error - The method 'ProfileScreen' isn't defined for the type '_SettingsScreenState' - lib\settings\settings.dart:748:49 - undefined_method
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/interface/Service%20History.dart' - lib\user\main_dashboard.dart:1:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/interface/VehicleDashboard.dart' - lib\user\main_dashboard.dart:2:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/interface/appointment_notification_page.dart' - lib\user\main_dashboard.dart:3:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/interface/mapscreen.dart' - lib\user\main_dashboard.dart:4:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/interface/profile.dart' - lib\user\main_dashboard.dart:5:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/interface/receipt_notification_page.dart' - lib\user\main_dashboard.dart:6:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/interface/obd2.dart' - lib\user\main_dashboard.dart:9:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/interface/servicerecords.dart' - lib\user\main_dashboard.dart:10:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/interface/appointments.dart' - lib\user\main_dashboard.dart:11:8 - uri_does_not_exist
+  error - Undefined name 'FirebaseFirestore' - lib\user\main_dashboard.dart:29:22 - undefined_identifier
+  error - The name 'VehicleDashboardScreen' isn't a class - lib\user\main_dashboard.dart:101:55 - creation_with_non_type
+  error - The name 'ProfileScreen' isn't a class - lib\user\main_dashboard.dart:166:57 - creation_with_non_type
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\user\main_dashboard.dart:174:42 - deprecated_member_use
+  error - The name 'QuerySnapshot' isn't a type, so it can't be used as a type argument - lib\user\main_dashboard.dart:262:34 - non_type_as_type_argument
+  error - Undefined name 'ImageFilter' - lib\user\main_dashboard.dart:301:43 - undefined_identifier
+  error - The name 'ReceiptNotificationPage' isn't a class - lib\user\main_dashboard.dart:370:65 - creation_with_non_type
+  error - The name 'AppointmentNotificationPage' isn't a class - lib\user\main_dashboard.dart:420:65 - creation_with_non_type
+  error - The name 'AppointmentsPage' isn't a class - lib\user\main_dashboard.dart:601:49 - creation_with_non_type
+  error - The method 'ServiceRecordsPage' isn't defined for the type '_DashboardScreenState' - lib\user\main_dashboard.dart:633:59 - undefined_method
+  error - The method 'ServiceRecordsPage' isn't defined for the type '_DashboardScreenState' - lib\user\main_dashboard.dart:656:55 - undefined_method
+  error - The method 'MapScreen' isn't defined for the type '_DashboardScreenState' - lib\user\main_dashboard.dart:691:24 - undefined_method
+  error - The name 'OBD2Page' isn't a class - lib\user\main_dashboard.dart:694:30 - creation_with_non_type
+  error - The name 'ServiceHistorypage' isn't a class - lib\user\main_dashboard.dart:697:30 - creation_with_non_type
+  error - The name 'ProfileScreen' isn't a class - lib\user\main_dashboard.dart:700:30 - creation_with_non_type
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/interface/Service%20History.dart' - lib\user\user_profile.dart:2:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/interface/Settings.dart' - lib\user\user_profile.dart:3:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/interface/mapscreen.dart' - lib\user\user_profile.dart:4:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/interface/service_history.dart' - lib\user\user_profile.dart:5:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'dashboard.dart' - lib\user\user_profile.dart:8:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:dr_cars_fyp/interface/obd2.dart' - lib\user\user_profile.dart:9:8 - uri_does_not_exist
+warning - The value of the field '_isExpanded' isn't used - lib\user\user_profile.dart:34:8 - unused_field
+  error - The method 'SettingsScreen' isn't defined for the type '_ProfileScreenState' - lib\user\user_profile.dart:211:57 - undefined_method
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\user\user_profile.dart:228:35 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\user\user_profile.dart:343:51 - deprecated_member_use
+  error - The method 'DashboardScreen' isn't defined for the type '_ProfileScreenState' - lib\user\user_profile.dart:411:53 - undefined_method
+  error - The method 'MapScreen' isn't defined for the type '_ProfileScreenState' - lib\user\user_profile.dart:416:53 - undefined_method
+  error - The method 'OBD2Page' isn't defined for the type '_ProfileScreenState' - lib\user\user_profile.dart:421:53 - undefined_method
+  error - The method 'ServiceHistorypage' isn't defined for the type '_ProfileScreenState' - lib\user\user_profile.dart:426:53 - undefined_method
+  error - The method 'DashboardScreen' isn't defined for the type '_ProfileScreenState' - lib\user\user_profile.dart:520:47 - undefined_method
+
+190 issues found. (ran in 3.4s)
