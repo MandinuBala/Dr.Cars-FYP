@@ -7,9 +7,9 @@ import 'package:dr_cars_fyp/admin/dashboard/admin_dashboard_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 
-// ------------------------------------------------------------------
-// COLOR CONSTANTS
-// ------------------------------------------------------------------
+
+
+
 const Color kAppBarColor = Colors.black;
 const Color kAccentOrange = Color.fromARGB(255, 255, 99, 32);
 const Color kBlueTint = Colors.blue;
@@ -17,9 +17,9 @@ const Color kVehicleCardBg = Color(0xFFFAF7F7);
 const Color kErrorRed = Colors.red;
 const Color kIconBgOpacityBlue = Color.fromRGBO(0, 0, 255, .1);
 
-// ------------------------------------------------------------------
-// GLOBAL THEME NOTIFIER
-// ------------------------------------------------------------------
+
+
+
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
 
 Future<void> main() async {

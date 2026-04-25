@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#0a0a1a; overflow:hidden; width:100vw; height:100vh; }
+canvas { display:block; }
+#badge {
+  position:fixed; top:12px; left:50%; transform:translateX(-50%);
+  background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2);
+  border-radius:20px; padding:6px 20px; color:#fff; font-size:11px;
+  font-weight:bold; letter-spacing:2px; font-family:Arial;
+  pointer-events:none; white-space:nowrap;
+}
+#hint {
+  position:fixed; bottom:80px; left:50%; transform:translateX(-50%);
+  color:rgba(255,255,255,0.3); font-size:9px; letter-spacing:2px;
+  font-family:Arial; pointer-events:none; white-space:nowrap;
+}
+#panel {
+  position:fixed; bottom:16px; left:50%; transform:translateX(-50%);
+  display:flex; flex-direction:column; align-items:center; gap:6px;
+}
+#clabel { color:rgba(255,255,255,0.4); font-size:8px; letter-spacing:3px; font-family:Arial; }
+#cname  { color:#fff; font-size:9px; letter-spacing:2px; font-family:Arial; }
+#swatches { display:flex; gap:8px; }
+.sw {
+  width:26px; height:26px; border-radius:50%; cursor:pointer;
+  border:3px solid transparent; transition:transform 0.15s;
+}
+.sw.on { border-color:#fff; transform:scale(1.15); }
+#loading {
+  position:fixed; inset:0; background:#0a0a1a;
+  display:flex; flex-direction:column; align-items:center;
+  justify-content:center; gap:14px; z-index:99;
+}
+#ring {
+  width:44px; height:44px; border:3px solid rgba(255,255,255,0.1);
+  border-top-color:#4488ff; border-radius:50%;
+  animation:spin 1s linear infinite;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+#ltxt { color:rgba(255,255,255,0.35); font-size:10px; letter-spacing:3px; font-family:Arial; }
+</style>
+</head>
+<body>
+<div id="loading"><div id="ring"></div><div id="ltxt">LOADING</div></div>
+<div id="badge">VEHICLE</div>
+<div id="hint">DRAG TO ROTATE · PINCH TO ZOOM</div>
+<div id="panel">
+  <div id="clabel">PAINT COLOR</div>
+  <div id="cname">ORIGINAL</div>
+  <div id="swatches"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+var brand   = window.BRAND    || 'BMW';
+var model   = window.MODEL    || 'Z4';
+var baseUrl = window.BASE_URL || 'http://192.168.1.21:5000';
+
+document.getElementById('badge').textContent =
+  brand.toUpperCase() + ' \u00B7 ' + model.toUpperCase();
+
+// SCENE
+var W = window.innerWidth, H = window.innerHeight;
+var renderer = new THREE.WebGLRenderer({ antialias: false }); // antialias OFF = faster
+renderer.setSize(W, H);
+renderer.setPixelRatio(1); // force 1x pixel ratio = faster on old phones
+renderer.shadowMap.enabled = false; // shadows OFF = faster
+document.body.appendChild(renderer.domElement);
+
+var scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0a0a1a);
+
+var camera = new THREE.PerspectiveCamera(45, W/H, 0.1, 100);
+camera.position.set(5, 2, 6);
+
+// CONTROLS
+var controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.1;
+controls.minDistance = 2;
+controls.maxDistance = 15;
+controls.maxPolarAngle = Math.PI / 2.1;
+controls.autoRotate = true;
+controls.autoRotateSpeed = 1.2;
+controls.target.set(0, 0.5, 0);
+
+// LIGHTS - keep simple for old phones
+scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+var dir = new THREE.DirectionalLight(0xffffff, 1.2);
+dir.position.set(5, 10, 5);
+scene.add(dir);
+var dir2 = new THREE.DirectionalLight(0x8899ff, 0.4);
+dir2.position.set(-5, 3, -5);
+scene.add(dir2);
+
+// GROUND
+var ground = new THREE.Mesh(
+  new THREE.CircleGeometry(8, 32),
+  new THREE.MeshLambertMaterial({ color: 0x111122 }) // Lambert = faster than Standard
+);
+ground.rotation.x = -Math.PI/2;
+ground.position.y = -0.01;
+scene.add(ground);
+scene.add(new THREE.GridHelper(16, 20, 0x223355, 0x112244));
+
+// COLORS
+var COLORS = [
+  { name:'Original',     css:'#888', hex: null },
+  { name:'White',        css:'#f5f5f0', hex: 0xf5f5f0 },
+  { name:'Black',        css:'#111111', hex: 0x111111 },
+  { name:'Red',          css:'#cc1a1a', hex: 0xcc1a1a },
+  { name:'Blue',         css:'#1e4d8c', hex: 0x1e4d8c },
+  { name:'Grey',         css:'#556070', hex: 0x556070 },
+  { name:'Green',        css:'#1a5c2a', hex: 0x1a5c2a },
+  { name:'Orange',       css:'#e05a00', hex: 0xe05a00 },
+];
+
+var swatchDiv = document.getElementById('swatches');
+var cname = document.getElementById('cname');
+var carModel = null;
+var origColors = [];
+
+COLORS.forEach(function(c, i) {
+  var el = document.createElement('div');
+  el.className = 'sw' + (i===0?' on':'');
+  el.style.background = c.css;
+  el.onclick = function() {
+    document.querySelectorAll('.sw').forEach(function(s){ s.classList.remove('on'); });
+    el.classList.add('on');
+    cname.textContent = c.name.toUpperCase();
+    if (!carModel) return;
+    if (c.hex === null) {
+      // Restore originals
+      origColors.forEach(function(o) {
+        o.mesh.material.color.setHex(o.color);
+      });
+    } else {
+      carModel.traverse(function(child) {
+        if (!child.isMesh) return;
+        var mat = child.material;
+        if (!mat || !mat.color) return;
+        var b = (mat.color.r + mat.color.g + mat.color.b) / 3;
+        // skip tires (very dark) and lights (emissive)
+        if (b > 0.08 && !(mat.emissive && (mat.emissive.r+mat.emissive.g+mat.emissive.b)>0.3)) {
+          mat.color.setHex(c.hex);
+        }
+      });
+    }
+  };
+  swatchDiv.appendChild(el);
+});
+
+// LOAD MODEL
+var url = baseUrl + '/models/' + brand + '/' + model + '.glb';
+var loader = new THREE.GLTFLoader();
+
+loader.load(url,
+  function(gltf) {
+    carModel = gltf.scene;
+
+    // Auto scale
+    var box = new THREE.Box3().setFromObject(carModel);
+    var size = box.getSize(new THREE.Vector3());
+    var center = box.getCenter(new THREE.Vector3());
+    var maxDim = Math.max(size.x, size.y, size.z);
+    var scale = 4.0 / maxDim;
+    carModel.scale.setScalar(scale);
+    carModel.position.sub(center.multiplyScalar(scale));
+    carModel.position.y += size.y * scale * 0.5;
+
+    // Save original colors
+    carModel.traverse(function(child) {
+      if (child.isMesh && child.material && child.material.color) {
+        origColors.push({
+          mesh: child,
+          color: child.material.color.getHex()
+        });
+      }
+    });
+
+    scene.add(carModel);
+    controls.target.set(0, size.y * scale * 0.4, 0);
+    controls.update();
+    document.getElementById('loading').style.display = 'none';
+  },
+  function(xhr) {
+    if (xhr.total > 0) {
+      var pct = Math.round(xhr.loaded/xhr.total*100);
+      document.getElementById('ltxt').textContent = 'LOADING ' + pct + '%';
+    }
+  },
+  function(err) {
+    document.getElementById('ltxt').textContent = 'MODEL NOT FOUND';
+    document.getElementById('ring').style.display = 'none';
+  }
+);
+
+// Stop auto rotate on touch
+renderer.domElement.addEventListener('pointerdown', function() {
+  controls.autoRotate = false;
+});
+
+// RESIZE
+window.addEventListener('resize', function() {
+  W = window.innerWidth; H = window.innerHeight;
+  renderer.setSize(W, H);
+  camera.aspect = W/H;
+  camera.updateProjectionMatrix();
+});
+
+// ANIMATE - throttle to 30fps for old phones
+var lastTime = 0;
+function animate(time) {
+  requestAnimationFrame(animate);
+  if (time - lastTime < 33) return; // 30fps cap
+  lastTime = time;
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate(0);
+
+// Called by Flutter
+function initViewer() {
+  brand   = window.BRAND    || brand;
+  model   = window.MODEL    || model;
+  baseUrl = window.BASE_URL || baseUrl;
+  document.getElementById('badge').textContent =
+    brand.toUpperCase() + ' \u00B7 ' + model.toUpperCase();
+  if (carModel) { scene.remove(carModel); carModel = null; origColors = []; }
+  document.getElementById('loading').style.display = 'flex';
+  document.getElementById('ltxt').textContent = 'LOADING';
+  document.getElementById('ring').style.display = 'block';
+  var newUrl = baseUrl + '/models/' + brand + '/' + model + '.glb';
+  loader.load(newUrl,
+    function(gltf) {
+      carModel = gltf.scene;
+      var box = new THREE.Box3().setFromObject(carModel);
+      var size = box.getSize(new THREE.Vector3());
+      var center = box.getCenter(new THREE.Vector3());
+      var maxDim = Math.max(size.x, size.y, size.z);
+      var scale = 4.0 / maxDim;
+      carModel.scale.setScalar(scale);
+      carModel.position.sub(center.multiplyScalar(scale));
+      carModel.position.y += size.y * scale * 0.5;
+      carModel.traverse(function(child) {
+        if (child.isMesh && child.material && child.material.color) {
+          origColors.push({ mesh: child, color: child.material.color.getHex() });
+        }
+      });
+      scene.add(carModel);
+      controls.target.set(0, size.y * scale * 0.4, 0);
+      controls.update();
+      document.getElementById('loading').style.display = 'none';
+    },
+    function(xhr) {
+      if (xhr.total > 0) {
+        var pct = Math.round(xhr.loaded/xhr.total*100);
+        document.getElementById('ltxt').textContent = 'LOADING ' + pct + '%';
+      }
+    },
+    function() {
+      document.getElementById('ltxt').textContent = 'MODEL NOT FOUND';
+      document.getElementById('ring').style.display = 'none';
+    }
+  );
+}
+</script>
+</body>
+</html>

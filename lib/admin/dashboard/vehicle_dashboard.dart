@@ -6,6 +6,7 @@ import 'package:dr_cars_fyp/user/user_profile.dart';
 import 'package:dr_cars_fyp/auth/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:dr_cars_fyp/utils/vehicle_image_helper.dart';
 
 class VehicleDashboardScreen extends StatefulWidget {
   const VehicleDashboardScreen({Key? key}) : super(key: key);
@@ -287,12 +288,11 @@ class _VehicleDashboardScreenState extends State<VehicleDashboardScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Row(
           children: [
-            CircleAvatar(
-              backgroundImage:
-                  vehicleData?['vehiclePhotoUrl'] != null
-                      ? NetworkImage(vehicleData!['vehiclePhotoUrl'])
-                      : AssetImage('images/logo.png') as ImageProvider,
-              radius: 30,
+            VehicleImageHelper.buildFittedImage(
+              brand: vehicleBrand,
+              model: vehicleModel,
+              photoUrl: vehicleData?['vehiclePhotoUrl'],
+              size: 60,
             ),
             SizedBox(width: 16),
             Expanded(

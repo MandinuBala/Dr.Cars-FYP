@@ -16,6 +16,7 @@ require("dotenv").config();
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use('/models', express.static('public/models')); // 3d model static files
 
 // CONNECT TO MONGODB
 mongoose.connect(process.env.MONGO_URI)

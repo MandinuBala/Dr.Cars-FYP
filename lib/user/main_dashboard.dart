@@ -13,6 +13,8 @@ import 'package:dr_cars_fyp/service/service_records.dart';
 import 'package:dr_cars_fyp/appointments/appointments.dart';
 import 'dart:ui';
 import 'package:http/http.dart' as http;
+import 'package:dr_cars_fyp/user/car_3d_viewer.dart';
+import 'package:dr_cars_fyp/utils/vehicle_image_helper.dart';
 
 const Color kAppBarColor = Colors.black;
 const Color kAccentOrange = Color.fromARGB(255, 255, 99, 32);
@@ -38,12 +40,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _hasVehicleInfo = false;
   bool _checkingVehicleInfo = true;
 
+  Future<Map<String, int>>? _notificationFuture;
+
   @override
   void initState() {
     super.initState();
-    _fetchUserData();
-    _fetchVehicleData();
-    _checkVehicleSetup();
+    _initDashboard();
   }
 
   Future<void> _fetchUserData() async {
@@ -63,56 +65,170 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  Future<void> _fetchVehicleData() async {
+  Future<void> _initDashboard() async {
     try {
       final user = await _authService.getCurrentUser();
+      if (user == null) {
+        setState(() {
+          userName = "User";
+          isLoading = false;
+          _checkingVehicleInfo = false;
+        });
+        return;
+      }
+
+      setState(() {
+        userName =
+            user['Name']?.toString() ?? user['name']?.toString() ?? "User";
+      });
+
       final uid =
-          user?['uid']?.toString() ??
-          user?['id']?.toString() ??
-          user?['_id']?.toString() ??
-          user?['userId']?.toString();
+          user['uid']?.toString() ??
+          user['id']?.toString() ??
+          user['_id']?.toString() ??
+          user['userId']?.toString();
 
       if (uid == null || uid.isEmpty) {
         setState(() {
           isLoading = false;
+          _checkingVehicleInfo = false;
           errorMessage = "Could not identify user";
         });
         return;
       }
 
       final vehicleDoc = await _authService.getVehicleByUserId(uid);
-      if (vehicleDoc != null) {
+
+      setState(() {
         vehicleData = vehicleDoc;
-        _vehicleImageUrl = vehicleData?['vehiclePhotoUrl'];
-      } else {
-        errorMessage =
-            "No vehicle data found. Please add your vehicle in your profile.";
+        _hasVehicleInfo = vehicleDoc != null;
+        _vehicleImageUrl = vehicleDoc?['vehiclePhotoUrl'];
+        if (vehicleDoc == null) {
+          errorMessage =
+              "No vehicle data found. Please add your vehicle in your profile.";
+        }
+        isLoading = false;
+        _checkingVehicleInfo = false;
+      });
+
+      if (vehicleDoc?['vehicleNumber'] != null) {
+        setState(() {
+          _notificationFuture = _loadNotificationCounts();
+        });
       }
     } catch (e) {
-      errorMessage = "Failed to load vehicle data.";
-      debugPrint("Error fetching vehicle data: $e");
-    } finally {
-      setState(() => isLoading = false);
+      debugPrint("Dashboard init error: $e");
+      setState(() {
+        isLoading = false;
+        _checkingVehicleInfo = false;
+        errorMessage = "Failed to load data.";
+      });
     }
   }
 
-  Future<void> _checkVehicleSetup() async {
-    setState(() => _checkingVehicleInfo = true);
-    try {
-      final user = await _authService.getCurrentUser();
-      final uid =
-          user?['uid']?.toString() ??
-          user?['id']?.toString() ??
-          user?['_id']?.toString() ??
-          user?['userId']?.toString();
-      if (uid != null && uid.isNotEmpty) {
-        final vehicleDoc = await _authService.getVehicleByUserId(uid);
-        _hasVehicleInfo = vehicleDoc != null;
-      }
-    } catch (e) {
-      debugPrint("Error checking vehicle setup: $e");
+  // ── ADD NEW GLB FILES HERE WHEN YOU GET THEM ──────────
+  static const Map<String, List<String>> _availableModels = {
+    'BMW': ['Z4'],
+    'Toyota': ['Camry', 'Crown'],
+    'Nissan': ['X-Trail', 'GT-R', '370Z'],
+    'Honda': ['Vezel'],
+    'Suzuki': ['Vitara'],
+    'Mazda': ['CX-5'],
+    'Kia': ['Picanto'],
+    'Hyundai': ['Santa Fe'],
+  };
+
+  Widget _buildVehicleDisplay(double w) {
+    final brand = vehicleData?['selectedBrand']?.toString();
+    final model = vehicleData?['selectedModel']?.toString();
+    final hasGlb = _availableModels[brand]?.contains(model) ?? false;
+    final vehicleAsset = VehicleImageHelper.getImage(brand, model);
+
+    Widget imageWidget;
+
+    if (_vehicleImageUrl != null && _vehicleImageUrl!.isNotEmpty) {
+      imageWidget = Image.network(
+        _vehicleImageUrl!,
+        fit: BoxFit.contain, // ← contain instead of cover
+        errorBuilder:
+            (_, __, ___) =>
+                vehicleAsset != null
+                    ? Image.asset(vehicleAsset, fit: BoxFit.contain)
+                    : Image.asset('images/dashcar.png', fit: BoxFit.contain),
+      );
+    } else if (vehicleAsset != null) {
+      imageWidget = Image.asset(
+        vehicleAsset,
+        fit: BoxFit.contain, // ← contain instead of cover
+        errorBuilder:
+            (_, __, ___) =>
+                Image.asset('images/dashcar.png', fit: BoxFit.contain),
+      );
+    } else {
+      imageWidget = Image.asset('images/dashcar.png', fit: BoxFit.contain);
     }
-    setState(() => _checkingVehicleInfo = false);
+
+    return Stack(
+      children: [
+        // White background container with fixed size
+        Container(
+          width: w,
+          height: 220,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+          ),
+          padding: const EdgeInsets.all(20),
+          child: Center(
+            // ← wrap in Center
+            child: imageWidget,
+          ),
+        ),
+
+        // 3D button
+        if (hasGlb)
+          Positioned(
+            bottom: 12,
+            right: 12,
+            child: GestureDetector(
+              onTap:
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder:
+                          (_) => Car3DViewerPage(brand: brand!, model: model!),
+                    ),
+                  ),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.75),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.white24),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.view_in_ar, color: Colors.white, size: 18),
+                    SizedBox(width: 6),
+                    Text(
+                      'View in 3D',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
   }
 
   int getNextMaintenanceMileage(int current) => ((current ~/ 5000) + 1) * 5000;
@@ -347,7 +463,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
             if (vehicleData?['vehicleNumber'] != null)
               FutureBuilder<Map<String, int>>(
-                future: _loadNotificationCounts(),
+                future: _notificationFuture,
                 builder: (_, snap) {
                   if (!snap.hasData) return const SizedBox();
                   final counts = snap.data ?? {};
@@ -566,8 +682,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 width: w,
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).cardColor,
-                  borderRadius: BorderRadius.circular(10),
+                  color: Colors.white, // ← force white not cardColor
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.2),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: Column(
                   children: [
@@ -575,27 +698,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       borderRadius: const BorderRadius.vertical(
                         top: Radius.circular(16),
                       ),
-                      child:
-                          _vehicleImageUrl != null
-                              ? Image.network(
-                                _vehicleImageUrl!,
-                                width: w,
-                                height: 250,
-                                fit: BoxFit.cover,
-                                errorBuilder:
-                                    (_, __, ___) => Image.asset(
-                                      'images/dashcar.png',
-                                      width: w,
-                                      height: 250,
-                                      fit: BoxFit.cover,
-                                    ),
-                              )
-                              : Image.asset(
-                                'images/dashcar.png',
-                                width: w,
-                                height: 250,
-                                fit: BoxFit.cover,
-                              ),
+                      child: _buildVehicleDisplay(w),
                     ),
                     Padding(
                       padding: const EdgeInsets.all(12),

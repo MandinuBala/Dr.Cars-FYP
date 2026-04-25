@@ -9,6 +9,7 @@ import 'package:dr_cars_fyp/user/main_dashboard.dart';
 import 'package:dr_cars_fyp/obd/OBD2.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:dr_cars_fyp/utils/vehicle_image_helper.dart';
 
 int _selectedIndex = 4;
 
@@ -47,6 +48,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       'Axio',
       'Vitz',
       'Prius',
+      'Crown',
     ],
     'Nissan': [
       'Sunny',
@@ -57,6 +59,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       'GT-R',
       'Sentra',
       'Patrol',
+      '370Z',
     ],
     'Honda': [
       'Civic',
@@ -263,12 +266,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Card(
           elevation: 2,
           child: ExpansionTile(
-            leading: CircleAvatar(
-              backgroundImage:
-                  _vehiclePhotoUrl != null
-                      ? NetworkImage(_vehiclePhotoUrl!)
-                      : AssetImage('images/logo.png') as ImageProvider,
-              radius: 25,
+            leading: VehicleImageHelper.buildFittedImage(
+              brand: selectedBrand,
+              model: selectedModel,
+              photoUrl: _vehiclePhotoUrl,
+              size: 50,
             ),
             title: Text(
               '${selectedBrand ?? ''} ${selectedModel ?? ''}',
@@ -352,16 +354,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       : Stack(
                         alignment: Alignment.center,
                         children: [
-                          CircleAvatar(
-                            radius: 50,
-                            backgroundImage: AssetImage('images/logo.png'),
+                          VehicleImageHelper.buildFittedImage(
+                            brand: selectedBrand,
+                            model: selectedModel,
+                            size: 150,
+                            backgroundColor: Colors.grey.shade100,
                           ),
                           Container(
+                            width: 150,
+                            height: 150,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: Colors.black.withOpacity(0.3),
                             ),
-                            child: Icon(
+                            child: const Icon(
                               Icons.add_photo_alternate,
                               color: Colors.white,
                               size: 30,
