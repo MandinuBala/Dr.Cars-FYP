@@ -369,7 +369,7 @@ import 'package:dr_cars_fyp/map/mapscreen.dart';
 import 'package:dr_cars_fyp/user/user_profile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
-
+import 'package:permission_handler/permission_handler.dart';
 
 void main() => runApp(MyApp());
 
@@ -431,7 +431,13 @@ class _OBD2PageState extends State<OBD2Page> {
   void initState() {
     super.initState();
     _selectedIndex = 2;
-    loadDevices();
+    _requestBluetoothAndLoad();
+  }
+
+  Future<void> _requestBluetoothAndLoad() async {
+    await Permission.bluetoothConnect.request();
+    await Permission.bluetoothScan.request();
+    loadDevices(); 
   }
 
   void loadDevices() async {

@@ -1,768 +1,929 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:dr_cars_fyp/obd/OBD2.dart';
 import 'package:dr_cars_fyp/service/service_history.dart';
 import 'package:dr_cars_fyp/user/main_dashboard.dart';
 import 'package:dr_cars_fyp/user/user_profile.dart';
-import 'package:dr_cars_fyp/admin/ratings/rating.dart';
-import 'package:dr_cars_fyp/auth/auth_service.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
-import 'package:location/location.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:flutter_polyline_points/flutter_polyline_points.dart';
+
+const String _googleApiKey = 'AIzaSyDWVyDHQmAKS3Q4dvsl1qtrzjvmFbnSNaM';
+int _selectedIndex = 1;
 
 class MapScreen extends StatefulWidget {
   @override
   _MapScreenState createState() => _MapScreenState();
 }
 
-int _selectedIndex = 1;
-
 class _MapScreenState extends State<MapScreen> {
-  final AuthService _authService = AuthService();
-  LocationData? _userLocation;
-  final Location _location = Location();
-  final MapController _mapController = MapController();
-  Map<String, dynamic>? _selectedCenter;
-  bool _showReviews = false;
-  List<LatLng> _polylineCoordinates = [];
+  final Completer<GoogleMapController> _mapController = Completer();
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocus = FocusNode();
+
+  Position? _userPosition;
+  Set<Marker> _markers = {};
+  Set<Polyline> _polylines = {};
   String _distanceText = "";
+  String _durationText = "";
+  bool _isLoading = true;
+  bool _isSearching = false;
+  Map<String, dynamic>? _selectedPlace;
+  bool _showReviews = false;
+  List _reviews = [];
   bool _isCardCollapsed = false;
-
-  Future<void> _getRoute(LatLng destination) async {
-    final originLat = _userLocation!.latitude!;
-    final originLng = _userLocation!.longitude!;
-    final apiKey = "AIzaSyCAkq8qyW7RiNAqcy7ZJ3E-nrtuHfoaIs4";
-
-    final url =
-        "https://maps.googleapis.com/maps/api/directions/json?origin=$originLat,$originLng&destination=${destination.latitude},${destination.longitude}&key=$apiKey";
-
-    final response = await http.get(Uri.parse(url));
-    final data = json.decode(response.body);
-
-    if (data['status'] == 'OK') {
-      final points = data['routes'][0]['overview_polyline']['points'];
-      final polylinePoints = PolylinePoints().decodePolyline(points);
-
-      final distance = data['routes'][0]['legs'][0]['distance']['text'];
-
-      final decodedCoordinates =
-          polylinePoints
-              .map((point) => LatLng(point.latitude, point.longitude))
-              .toList();
-
-      setState(() {
-        _polylineCoordinates = decodedCoordinates;
-        _distanceText = distance;
-      });
-
-      // Fit the map to the route bounds
-      if (_polylineCoordinates.isNotEmpty) {
-        final bounds = LatLngBounds(
-          _polylineCoordinates.first,
-          _polylineCoordinates.first,
-        );
-
-        for (var latLng in _polylineCoordinates) {
-          bounds.extend(latLng);
-        }
-
-        _mapController.fitBounds(
-          bounds,
-          options: FitBoundsOptions(padding: EdgeInsets.all(50)),
-        );
-      }
-    } else {
-      print("Directions API error: ${data['status']}");
-    }
-  }
-
-  Future<void> _makePhoneCall(String phoneNumber) async {
-    final Uri launchUri = Uri(scheme: 'tel', path: phoneNumber);
-    await launchUrl(launchUri);
-  }
-
-  final List<Map<String, dynamic>> serviceCenters = [
-    {
-      "name": "Dr Cars Colombo Service Center",
-      "lat": 6.9271,
-      "lng": 79.8612,
-      "description":
-          "Located in the heart of Colombo, providing 24/7 customer support.",
-      "image": "images/colombo.jpg",
-      "phone": "0762611651",
-    },
-    {
-      "name": "Dr Cars Kandy Service Center",
-      "lat": 7.2906,
-      "lng": 80.6337,
-      "description":
-          "Situated near the Kandy Lake, offering maintenance services.",
-      "image": "images/kandy.jpg",
-      "phone": "0762611651",
-    },
-    {
-      "name": "Dr Cars Galle Service Center",
-      "lat": 6.0535,
-      "lng": 80.2210,
-      "description":
-          "A modern facility near Galle Fort, specializing in quick repairs.",
-      "image": "images/galle.jpg",
-      "phone": "0762611651",
-    },
-    {
-      "name": "Dr Cars Jaffna Service Center",
-      "lat": 9.6615,
-      "lng": 80.0255,
-      "description":
-          "Serving the northern region with dedicated support services.",
-      "image": "images/jaffna.jpg",
-      "phone": "0762611651",
-    },
-    {
-      "name": "Dr Cars Anuradhapura Service Center",
-      "lat": 8.3114,
-      "lng": 80.4037,
-      "description":
-          "Located close to heritage sites, ensuring reliable service.",
-      "image": "images/anuradapura.jpg",
-      "phone": "0762611651",
-    },
-    {
-      "name": "Dr Cars Ampara Service Center",
-      "lat": 7.301763770344583,
-      "lng": 81.67479843992851,
-      "description":
-          "Located close to heritage sites, ensuring reliable service.",
-      "image": "images/ampara.jpg",
-      "phone": "0762611651",
-    },
-  ];
-
-  final List<Map<String, dynamic>> fuelCenters = [
-    {
-      "fid": "f1",
-      "fname": "LankaFuel Maharagama",
-      "flat": 6.8510,
-      "flng": 79.9221,
-      "fdescription": "Fuel station near Maharagama Town",
-      "fphone": "0771234567",
-    },
-    {
-      "fid": "f2",
-      "fname": "LankaFuel Kurunegala",
-      "flat": 7.4863,
-      "flng": 80.3621,
-      "fdescription": "24-hour fuel station in Kurunegala town.",
-      "fphone": "0772345678",
-    },
-    {
-      "fid": "f3",
-      "fname": "LankaFuel Badulla",
-      "flat": 6.9934,
-      "flng": 81.0550,
-      "fdescription": "Badulla main road station, diesel and petrol available.",
-      "fphone": "0773456789",
-    },
-    {
-      "fid": "f4",
-      "fname": "LankaFuel Matara",
-      "flat": 5.9485,
-      "flng": 80.5353,
-      "fdescription": "Matara beach-side station with 24/7 service.",
-      "fphone": "0774567890",
-    },
-    {
-      "fid": "f5",
-      "fname": "LankaFuel Trincomalee",
-      "flat": 8.5880,
-      "flng": 81.2152,
-      "fdescription": "Located near the Trinco clock tower.",
-      "fphone": "0775678901",
-    },
-    {
-      "fid": "f6",
-      "fname": "LankaFuel Ratnapura",
-      "flat": 6.6828,
-      "flng": 80.3996,
-      "fdescription": "Gem city main fuel center on Pelmadulla road.",
-      "fphone": "0776789012",
-    },
-  ];
+  List<dynamic> _searchSuggestions = [];
+  bool _showSuggestions = false;
 
   @override
   void initState() {
     super.initState();
     _getUserLocation();
-    _trackUserLocation();
+    _searchController.addListener(_onSearchChanged);
   }
 
-  // fuel centers card
-  void _showFuelBottomSheet(
-    BuildContext context,
-    String fname,
-    String fdescription,
-    String fphone,
-    double flat,
-    double flng,
-  ) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder:
-          (context) => Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 50,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 15),
-                Text(
-                  fname,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(fdescription, style: const TextStyle(fontSize: 16)),
-                const SizedBox(height: 20),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _buildCardButton(
-                      Icons.arrow_back,
-                      "Back",
-                      Colors.red,
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                    ),
-                    _buildCardButton(
-                      Icons.phone,
-                      "Call",
-                      Colors.green,
-                      onPressed: () {
-                        if (_selectedCenter!['fphone'] != null) {
-                          _makePhoneCall(_selectedCenter!['fphone']);
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text("No phone number available."),
-                            ),
-                          );
-                        }
-                      },
-                    ),
-                    _buildCardButton(
-                      Icons.directions,
-                      "Directions",
-                      Colors.blue,
-                      onPressed: () {
-                        final LatLng centerLocation = LatLng(flat, flng);
-                        _getRoute(centerLocation);
-                        setState(() {
-                          _isCardCollapsed = !_isCardCollapsed;
-                        });
-                      },
-                    ),
-                    _buildCardButton(
-                      Icons.share,
-                      "Share",
-                      Colors.orange,
-                      onPressed: () {
-                        final shareText =
-                            'Check out this fuel center:\n'
-                            '$fname\n$fdescription\n'
-                            'Location: https://www.google.com/maps/search/?api=1&query=$flat,$flng';
-                        Share.share(shareText);
-                      },
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 20),
-              ],
-            ),
-          ),
-    );
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _searchFocus.dispose();
+    super.dispose();
   }
+
+  // ── 1. Get user GPS location ──────────────────────────────────────────────
 
   Future<void> _getUserLocation() async {
-    bool serviceEnabled = await _location.serviceEnabled();
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      serviceEnabled = await _location.requestService();
-      if (!serviceEnabled) return;
+      await Geolocator.openLocationSettings();
+      return;
     }
-
-    PermissionStatus permissionGranted = await _location.hasPermission();
-    if (permissionGranted == PermissionStatus.denied) {
-      permissionGranted = await _location.requestPermission();
-      if (permissionGranted != PermissionStatus.granted) return;
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) return;
     }
-
-    _location.changeSettings(accuracy: LocationAccuracy.high, interval: 3000);
-
-    final LocationData locationData = await _location.getLocation();
-    setState(() {
-      _userLocation = locationData;
-    });
-  }
-
-  void _trackUserLocation() {
-    _location.onLocationChanged.listen((LocationData currentLocation) {
-      setState(() {
-        _userLocation = currentLocation;
-      });
-    });
-  }
-
-  double _calculateAverageRating(List<Map<String, dynamic>> feedbacks) {
-    if (feedbacks.isEmpty) return 0.0;
-    int totalRating = 0;
-
-    for (var feedback in feedbacks) {
-      totalRating += int.tryParse(feedback['rating']?.toString() ?? '0') ?? 0;
-    }
-
-    return totalRating / feedbacks.length;
-  }
-
-  Future<List<Map<String, dynamic>>> _fetchFeedbacks() async {
-    if (_selectedCenter == null) {
-      return [];
-    }
-
-    final response = await http.get(
-      Uri.parse(
-        '${_authService.baseUrl}/feedbacks?serviceCenterId=${Uri.encodeComponent(_selectedCenter!['name'].toString())}',
-      ),
+    final position = await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high,
     );
-
-    if (response.statusCode != 200) {
-      return [];
-    }
-
-    final decoded = jsonDecode(response.body) as List<dynamic>;
-    return decoded
-        .map((item) => Map<String, dynamic>.from(item as Map))
-        .toList();
-  }
-
-  Widget _buildCardButton(
-    IconData icon,
-    String label,
-    Color color, {
-    VoidCallback? onPressed,
-  }) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: Column(
-        children: [
-          CircleAvatar(
-            backgroundColor: color.withOpacity(0.1),
-            child: Icon(icon, color: color),
-          ),
-          SizedBox(height: 6),
-          Text(label, style: TextStyle(fontSize: 12)),
-        ],
+    setState(() => _userPosition = position);
+    await _searchNearbyPlaces();
+    final controller = await _mapController.future;
+    controller.animateCamera(
+      CameraUpdate.newLatLngZoom(
+        LatLng(position.latitude, position.longitude),
+        13,
       ),
     );
   }
 
-  Widget _buildReviewsList() {
-    return FutureBuilder<List<Map<String, dynamic>>>(
-      future: _fetchFeedbacks(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
-        }
+  // ── 2. Search nearby service centers & garages ────────────────────────────
 
-        final feedbacks = snapshot.data ?? [];
-        if (feedbacks.isEmpty) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text(
-                "No reviews available for this center yet. Be the first to add a review!",
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey[600], fontSize: 16),
+  Future<void> _searchNearbyPlaces() async {
+    if (_userPosition == null) return;
+    setState(() => _isLoading = true);
+
+    final lat = _userPosition!.latitude;
+    final lng = _userPosition!.longitude;
+    final Set<Marker> markers = {};
+
+    markers.add(
+      Marker(
+        markerId: const MarkerId('user'),
+        position: LatLng(lat, lng),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+        infoWindow: const InfoWindow(title: 'You are here'),
+      ),
+    );
+
+    final searchTypes = {
+      'car_repair': BitmapDescriptor.hueRed,
+      'car_dealer': BitmapDescriptor.hueOrange,
+    };
+
+    for (final entry in searchTypes.entries) {
+      final url = Uri.parse(
+        'https://maps.googleapis.com/maps/api/place/nearbysearch/json'
+        '?location=$lat,$lng&radius=5000&type=${entry.key}&key=$_googleApiKey',
+      );
+      final response = await http.get(url);
+      final data = json.decode(response.body);
+
+      if (data['status'] == 'OK') {
+        for (final place in data['results']) {
+          final placeId = place['place_id'];
+          final placeLat = place['geometry']['location']['lat'];
+          final placeLng = place['geometry']['location']['lng'];
+
+          markers.add(
+            Marker(
+              markerId: MarkerId(placeId),
+              position: LatLng(placeLat, placeLng),
+              icon: BitmapDescriptor.defaultMarkerWithHue(entry.value),
+              infoWindow: InfoWindow(
+                title: place['name'],
+                snippet: '⭐ ${place['rating'] ?? 'N/A'}',
               ),
+              onTap: () => _onMarkerTapped(place),
             ),
           );
         }
+      }
+    }
 
-        final averageRating = _calculateAverageRating(feedbacks);
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 20.0,
-                vertical: 10.0,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    "Reviews (${feedbacks.length})",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  Row(
-                    children: [
-                      Text(
-                        averageRating.toStringAsFixed(1),
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(width: 4),
-                      Row(
-                        children: List.generate(5, (index) {
-                          return Icon(
-                            Icons.star,
-                            size: 16,
-                            color:
-                                index < averageRating.floor()
-                                    ? Colors.orange
-                                    : Colors.grey[300],
-                          );
-                        }),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: ListView.builder(
-                padding: EdgeInsets.only(bottom: 20),
-                itemCount: feedbacks.length,
-                itemBuilder: (context, index) {
-                  final feedback = feedbacks[index];
-                  return Card(
-                    margin: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                    elevation: 2,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                feedback['name'] ?? 'Anonymous',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text(
-                                _formatDate(feedback['date'] ?? ''),
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 8),
-                          Row(
-                            children: List.generate(5, (index) {
-                              return Icon(
-                                Icons.star,
-                                size: 18,
-                                color:
-                                    index <
-                                            (int.tryParse(
-                                                  feedback['rating']
-                                                          ?.toString() ??
-                                                      '0',
-                                                ) ??
-                                                0)
-                                        ? Colors.orange
-                                        : Colors.grey[300],
-                              );
-                            }),
-                          ),
-                          SizedBox(height: 12),
-                          Text(
-                            feedback['feedback'] ?? '',
-                            style: TextStyle(fontSize: 14, color: Colors.black),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        );
-      },
-    );
+    setState(() {
+      _markers = markers;
+      _isLoading = false;
+    });
   }
 
-  String _formatDate(String dateString) {
-    try {
-      final date = DateTime.parse(dateString);
-      return "${date.day}/${date.month}/${date.year}";
-    } catch (e) {
-      return dateString;
+  // ── Search nearby by type using user's actual GPS location ────────────────
+  Future<void> _searchNearbyByType(String type, String label) async {
+    if (_userPosition == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Getting your location...')));
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _selectedPlace = null;
+      _showReviews = false;
+      _showSuggestions = false;
+      _searchController.text = label;
+    });
+
+    final lat = _userPosition!.latitude;
+    final lng = _userPosition!.longitude;
+
+    final url = Uri.parse(
+      'https://maps.googleapis.com/maps/api/place/nearbysearch/json'
+      '?location=$lat,$lng'
+      '&radius=5000'
+      '&type=$type'
+      '&key=$_googleApiKey',
+    );
+
+    final response = await http.get(url);
+    final data = json.decode(response.body);
+
+    print('🔍 NEARBY $label STATUS: ${data['status']}');
+
+    final Set<Marker> markers = Set.from(
+      _markers.where((m) => m.markerId.value == 'user'),
+    );
+
+    // Color per type
+    final hue =
+        {
+          'car_repair': BitmapDescriptor.hueRed,
+          'car_dealer': BitmapDescriptor.hueOrange,
+          'gas_station': BitmapDescriptor.hueGreen,
+          'electric_vehicle_charging_station': BitmapDescriptor.hueBlue,
+        }[type] ??
+        BitmapDescriptor.hueViolet;
+
+    if (data['status'] == 'OK') {
+      for (final place in data['results']) {
+        final placeLat = place['geometry']['location']['lat'];
+        final placeLng = place['geometry']['location']['lng'];
+
+        markers.add(
+          Marker(
+            markerId: MarkerId(place['place_id']),
+            position: LatLng(placeLat, placeLng),
+            icon: BitmapDescriptor.defaultMarkerWithHue(hue),
+            infoWindow: InfoWindow(
+              title: place['name'],
+              snippet: '⭐ ${place['rating'] ?? 'N/A'}',
+            ),
+            onTap: () => _onMarkerTapped(place),
+          ),
+        );
+      }
+
+      // Move camera to user location to show nearby results
+      final controller = await _mapController.future;
+      controller.animateCamera(
+        CameraUpdate.newLatLngZoom(LatLng(lat, lng), 13),
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Found ${data['results'].length} $label near you'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No $label found nearby (${data['status']})')),
+      );
+    }
+
+    setState(() {
+      _markers = markers;
+      _isLoading = false;
+    });
+  }
+
+  // ── 3. Search autocomplete ────────────────────────────────────────────────
+
+  Timer? _debounce;
+  void _onSearchChanged() {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 400), () {
+      final query = _searchController.text.trim();
+      if (query.length > 2) {
+        _fetchAutocompleteSuggestions(query);
+      } else {
+        setState(() {
+          _searchSuggestions = [];
+          _showSuggestions = false;
+        });
+      }
+    });
+  }
+
+  Future<void> _fetchAutocompleteSuggestions(String query) async {
+    if (_userPosition == null) return;
+    setState(() => _isSearching = true);
+
+    final url = Uri.parse(
+      'https://maps.googleapis.com/maps/api/place/autocomplete/json'
+      '?input=${Uri.encodeComponent(query)}'
+      '&location=${_userPosition!.latitude},${_userPosition!.longitude}'
+      '&radius=50000'
+      '&key=$_googleApiKey',
+    );
+
+    final response = await http.get(url);
+    final data = json.decode(response.body);
+
+    setState(() {
+      _isSearching = false;
+      if (data['status'] == 'OK') {
+        _searchSuggestions = data['predictions'];
+        _showSuggestions = true;
+      }
+    });
+  }
+
+  Future<void> _selectSuggestion(dynamic suggestion) async {
+    final placeId = suggestion['place_id'];
+    _searchController.text = suggestion['description'];
+    _searchFocus.unfocus();
+    setState(() => _showSuggestions = false);
+
+    // Fetch place details to get location
+    final url = Uri.parse(
+      'https://maps.googleapis.com/maps/api/place/details/json'
+      '?place_id=$placeId'
+      '&fields=geometry,name,rating,user_ratings_total,vicinity,'
+      'opening_hours,photos,formatted_phone_number,reviews,website'
+      '&key=$_googleApiKey',
+    );
+
+    final response = await http.get(url);
+    final data = json.decode(response.body);
+
+    if (data['status'] == 'OK') {
+      final result = data['result'];
+      final lat = result['geometry']['location']['lat'];
+      final lng = result['geometry']['location']['lng'];
+
+      // Move camera
+      final controller = await _mapController.future;
+      controller.animateCamera(
+        CameraUpdate.newLatLngZoom(LatLng(lat, lng), 16),
+      );
+
+      // Add searched marker
+      final Set<Marker> updatedMarkers = Set.from(_markers);
+      updatedMarkers.add(
+        Marker(
+          markerId: const MarkerId('searched'),
+          position: LatLng(lat, lng),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueCyan),
+          infoWindow: InfoWindow(title: result['name'] ?? ''),
+          onTap: () => _showPlaceCard(result, placeId),
+        ),
+      );
+      setState(() => _markers = updatedMarkers);
+
+      // Show place card
+      _showPlaceCard(result, placeId);
     }
   }
+
+  void _showPlaceCard(Map<String, dynamic> result, String placeId) {
+    final photos = result['photos'] as List?;
+    setState(() {
+      _selectedPlace = {
+        'place_id': placeId,
+        'name': result['name'] ?? '',
+        'rating': result['rating']?.toString() ?? 'N/A',
+        'total_ratings': result['user_ratings_total']?.toString() ?? '0',
+        'open_now': result['opening_hours']?['open_now'],
+        'lat': result['geometry']['location']['lat'],
+        'lng': result['geometry']['location']['lng'],
+        'photo_ref':
+            photos != null && photos.isNotEmpty
+                ? photos[0]['photo_reference']
+                : null,
+        'address': result['vicinity'] ?? result['formatted_address'] ?? '',
+        'phone': result['formatted_phone_number'] ?? '',
+        'hours': result['opening_hours']?['weekday_text'] ?? [],
+        'website': result['website'] ?? '',
+      };
+      _reviews = result['reviews'] ?? [];
+      _showReviews = false;
+      _isCardCollapsed = false;
+    });
+  }
+
+  // ── 4. Marker tapped ──────────────────────────────────────────────────────
+
+  Future<void> _onMarkerTapped(Map<String, dynamic> place) async {
+    setState(() {
+      _selectedPlace = {
+        'place_id': place['place_id'],
+        'name': place['name'],
+        'rating': place['rating']?.toString() ?? 'N/A',
+        'total_ratings': place['user_ratings_total']?.toString() ?? '0',
+        'open_now': place['opening_hours']?['open_now'],
+        'lat': place['geometry']['location']['lat'],
+        'lng': place['geometry']['location']['lng'],
+        'photo_ref': place['photos']?[0]?['photo_reference'],
+        'address': place['vicinity'] ?? '',
+        'phone': '',
+        'hours': [],
+      };
+      _showReviews = false;
+      _isCardCollapsed = false;
+      _reviews = [];
+    });
+
+    // Animate camera to tapped marker
+    final controller = await _mapController.future;
+    controller.animateCamera(
+      CameraUpdate.newLatLngZoom(
+        LatLng(_selectedPlace!['lat'], _selectedPlace!['lng']),
+        15,
+      ),
+    );
+
+    // Fetch full details
+    final url = Uri.parse(
+      'https://maps.googleapis.com/maps/api/place/details/json'
+      '?place_id=${place['place_id']}'
+      '&fields=formatted_phone_number,opening_hours,reviews,website'
+      '&key=$_googleApiKey',
+    );
+    final response = await http.get(url);
+    final data = json.decode(response.body);
+
+    if (data['status'] == 'OK') {
+      final result = data['result'];
+      setState(() {
+        _selectedPlace!['phone'] = result['formatted_phone_number'] ?? '';
+        _selectedPlace!['hours'] =
+            result['opening_hours']?['weekday_text'] ?? [];
+        _reviews = result['reviews'] ?? [];
+        _selectedPlace!['website'] = result['website'] ?? '';
+      });
+    }
+  }
+
+  // ── 5. Get driving route ──────────────────────────────────────────────────
+
+  Future<void> _getRoute(double destLat, double destLng) async {
+    if (_userPosition == null) return;
+
+    setState(() => _isLoading = true);
+
+    final url = Uri.parse(
+      'https://maps.googleapis.com/maps/api/directions/json'
+      '?origin=${_userPosition!.latitude},${_userPosition!.longitude}'
+      '&destination=$destLat,$destLng'
+      '&mode=driving'
+      '&key=$_googleApiKey',
+    );
+
+    final response = await http.get(url);
+    final data = json.decode(response.body);
+    setState(() => _isLoading = false);
+
+    if (data['status'] == 'OK') {
+      final points = data['routes'][0]['overview_polyline']['points'];
+      final distance = data['routes'][0]['legs'][0]['distance']['text'];
+      final duration = data['routes'][0]['legs'][0]['duration']['text'];
+      final decoded = _decodePolyline(points);
+
+      setState(() {
+        _distanceText = distance;
+        _durationText = duration;
+        _polylines = {
+          Polyline(
+            polylineId: const PolylineId('route'),
+            points: decoded,
+            color: Colors.blue,
+            width: 5,
+          ),
+        };
+        _isCardCollapsed = true;
+      });
+
+      double minLat = decoded.first.latitude, maxLat = decoded.first.latitude;
+      double minLng = decoded.first.longitude, maxLng = decoded.first.longitude;
+      for (var p in decoded) {
+        if (p.latitude < minLat) minLat = p.latitude;
+        if (p.latitude > maxLat) maxLat = p.latitude;
+        if (p.longitude < minLng) minLng = p.longitude;
+        if (p.longitude > maxLng) maxLng = p.longitude;
+      }
+
+      final controller = await _mapController.future;
+      controller.animateCamera(
+        CameraUpdate.newLatLngBounds(
+          LatLngBounds(
+            southwest: LatLng(minLat, minLng),
+            northeast: LatLng(maxLat, maxLng),
+          ),
+          80,
+        ),
+      );
+    }
+  }
+
+  // ── 6. Decode polyline ────────────────────────────────────────────────────
+
+  List<LatLng> _decodePolyline(String encoded) {
+    List<LatLng> points = [];
+    int index = 0, lat = 0, lng = 0;
+    while (index < encoded.length) {
+      int shift = 0, result = 0, b;
+      do {
+        b = encoded.codeUnitAt(index++) - 63;
+        result |= (b & 0x1F) << shift;
+        shift += 5;
+      } while (b >= 0x20);
+      lat += (result & 1) != 0 ? ~(result >> 1) : (result >> 1);
+      shift = 0;
+      result = 0;
+      do {
+        b = encoded.codeUnitAt(index++) - 63;
+        result |= (b & 0x1F) << shift;
+        shift += 5;
+      } while (b >= 0x20);
+      lng += (result & 1) != 0 ? ~(result >> 1) : (result >> 1);
+      points.add(LatLng(lat / 1e5, lng / 1e5));
+    }
+    return points;
+  }
+
+  // ── 7. Open in Google Maps / Phone ───────────────────────────────────────
+
+  Future<void> _openInGoogleMaps(double lat, double lng) async {
+    final uri = Uri.parse(
+      'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving',
+    );
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  Future<void> _makePhoneCall(String phone) async {
+    await launchUrl(Uri(scheme: 'tel', path: phone));
+  }
+
+  Future<void> _openWebsite(String url) async {
+    final uri = Uri.parse(url.startsWith('http') ? url : 'https://$url');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  // ── 8. Build UI ───────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => DashboardScreen()),
-            );
-          },
-        ),
-        title: const Text(
-          " Dr Cars Service Centers",
-          style: TextStyle(fontSize: 25),
-        ),
-      ),
+      resizeToAvoidBottomInset: false,
       body:
-          _userLocation == null
-              ? const Center(child: CircularProgressIndicator())
+          _userPosition == null
+              ? const Scaffold(body: Center(child: CircularProgressIndicator()))
               : Stack(
                 children: [
-                  FlutterMap(
-                    mapController: _mapController,
-                    options: MapOptions(
-                      center: LatLng(
-                        _userLocation!.latitude!,
-                        _userLocation!.longitude!,
+                  // ── Google Map (full screen, no AppBar) ──
+                  GoogleMap(
+                    initialCameraPosition: CameraPosition(
+                      target: LatLng(
+                        _userPosition!.latitude,
+                        _userPosition!.longitude,
                       ),
-                      zoom: 9.0,
-                      minZoom: 5.0,
-                      maxZoom: 18.0,
-                      interactiveFlags: InteractiveFlag.all,
+                      zoom: 13,
                     ),
-                    children: [
-                      TileLayer(
-                        urlTemplate:
-                            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-                        subdomains: ['a', 'b', 'c'],
-                        userAgentPackageName: 'com.example.dr_cars',
-                      ),
-                      if (_distanceText.isNotEmpty)
-                        Positioned(
-                          top: 100, // adjust vertically
-                          left: 0,
-                          right: 0,
-                          child: Center(
-                            child: Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.9),
-                                borderRadius: BorderRadius.circular(20),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black26,
-                                    blurRadius: 4,
-                                    offset: Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.directions,
-                                    color: Colors.blue,
-                                    size: 20,
-                                  ),
-                                  SizedBox(width: 6),
-                                  Text(
-                                    "Distance: $_distanceText",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.black,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-
-                      PolylineLayer(
-                        polylines: [
-                          Polyline(
-                            points: _polylineCoordinates,
-                            strokeWidth: 4.0,
-                            color: Colors.blue,
-                          ),
-                        ],
-                      ),
-
-                      MarkerLayer(
-                        markers: [
-                          //  User location
-                          Marker(
-                            point: LatLng(
-                              _userLocation!.latitude!,
-                              _userLocation!.longitude!,
-                            ),
-                            width: 50,
-                            height: 50,
-                            child: const Icon(
-                              Icons.person_pin_circle,
-                              color: Colors.blue,
-                              size: 50,
-                            ),
-                          ),
-
-                          // Service centers
-                          for (var center in serviceCenters)
-                            Marker(
-                              point: LatLng(center["lat"], center["lng"]),
-                              width: 40,
-                              height: 40,
-                              child: GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    _selectedCenter = center;
-                                    _showReviews = false;
-                                    _isCardCollapsed = false;
-                                  });
-                                },
-                                child: const Icon(
-                                  Icons.location_on,
-                                  color: Colors.red,
-                                  size: 40,
-                                ),
-                              ),
-                            ),
-
-                          // Fuel centers
-                          for (var fcenter in fuelCenters)
-                            Marker(
-                              point: LatLng(fcenter["flat"], fcenter["flng"]),
-                              width: 40,
-                              height: 40,
-                              child: GestureDetector(
-                                onTap: () {
-                                  _showFuelBottomSheet(
-                                    context,
-                                    fcenter["fname"],
-                                    fcenter["fdescription"],
-                                    fcenter["fphone"],
-                                    fcenter["flat"],
-                                    fcenter["flng"],
-                                  );
-                                },
-                                child: const Icon(
-                                  Icons.local_gas_station,
-                                  color: Color.fromARGB(255, 1, 11, 2),
-                                  size: 40,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-
-                      Positioned(
-                        top: 20,
-                        right: 10,
-                        child: FloatingActionButton(
-                          mini: true,
-                          backgroundColor: Colors.white,
-                          child: Icon(Icons.refresh, color: Colors.black),
-                          onPressed: () {
-                            setState(() {
-                              _polylineCoordinates.clear();
-                              _isCardCollapsed = false;
-                              _showReviews = false;
-                              _distanceText = "";
-                            });
-                          },
-                        ),
-                      ),
-                    ],
+                    markers: _markers,
+                    polylines: _polylines,
+                    myLocationEnabled: true,
+                    myLocationButtonEnabled: false,
+                    zoomControlsEnabled: false,
+                    mapType: MapType.normal,
+                    onMapCreated: (c) => _mapController.complete(c),
+                    onTap: (_) {
+                      setState(() {
+                        _selectedPlace = null;
+                        _showReviews = false;
+                        _showSuggestions = false;
+                      });
+                      _searchFocus.unfocus();
+                    },
                   ),
 
-                  // Zoom controls
+                  // ── Loading spinner ──
+                  if (_isLoading)
+                    Container(
+                      color: Colors.black12,
+                      child: const Center(child: CircularProgressIndicator()),
+                    ),
+
+                  // ── TOP SEARCH BAR (like Google Maps) ──
                   Positioned(
-                    top: 20,
-                    right: 10,
+                    top: MediaQuery.of(context).padding.top + 10,
+                    left: 12,
+                    right: 12,
                     child: Column(
                       children: [
-                        FloatingActionButton(
-                          heroTag: "zoom_in",
-                          mini: true,
-                          backgroundColor: Colors.white,
-                          child: const Icon(Icons.zoom_in, color: Colors.black),
-                          onPressed: () {
-                            setState(() {
-                              _mapController.move(
-                                _mapController.center,
-                                _mapController.zoom + 1,
-                              );
-                            });
-                          },
-                        ),
-                        SizedBox(height: 20),
-                        FloatingActionButton(
-                          heroTag: "zoom_out",
-                          mini: true,
-                          backgroundColor: Colors.white,
-                          child: const Icon(
-                            Icons.zoom_out,
-                            color: Colors.black,
+                        // Search bar
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Colors.black26,
+                                blurRadius: 8,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
                           ),
-                          onPressed: () {
-                            setState(() {
-                              _mapController.move(
-                                _mapController.center,
-                                _mapController.zoom - 1,
-                              );
-                            });
-                          },
+                          child: Row(
+                            children: [
+                              // Back button
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.arrow_back,
+                                  color: Colors.black87,
+                                ),
+                                onPressed:
+                                    () => Navigator.pushReplacement(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => DashboardScreen(),
+                                      ),
+                                    ),
+                              ),
+                              // Search field
+                              Expanded(
+                                child: TextField(
+                                  controller: _searchController,
+                                  focusNode: _searchFocus,
+                                  decoration: const InputDecoration(
+                                    hintText:
+                                        'Search service centers, garages...',
+                                    hintStyle: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.grey,
+                                    ),
+                                    border: InputBorder.none,
+                                    contentPadding: EdgeInsets.symmetric(
+                                      vertical: 14,
+                                    ),
+                                  ),
+                                  onSubmitted: (val) {
+                                    if (val.isNotEmpty)
+                                      _fetchAutocompleteSuggestions(val);
+                                  },
+                                ),
+                              ),
+                              // Clear / Search icon
+                              if (_searchController.text.isNotEmpty)
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.close,
+                                    color: Colors.grey,
+                                  ),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    setState(() {
+                                      _showSuggestions = false;
+                                      _searchSuggestions = [];
+                                    });
+                                  },
+                                )
+                              else
+                                _isSearching
+                                    ? const Padding(
+                                      padding: EdgeInsets.all(12),
+                                      child: SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      ),
+                                    )
+                                    : const Padding(
+                                      padding: EdgeInsets.all(12),
+                                      child: Icon(
+                                        Icons.search,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                            ],
+                          ),
                         ),
+
+                        // ── Autocomplete suggestions dropdown ──
+                        if (_showSuggestions && _searchSuggestions.isNotEmpty)
+                          Container(
+                            margin: const EdgeInsets.only(top: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: const [
+                                BoxShadow(color: Colors.black26, blurRadius: 6),
+                              ],
+                            ),
+                            child: ListView.separated(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount:
+                                  _searchSuggestions.length > 5
+                                      ? 5
+                                      : _searchSuggestions.length,
+                              separatorBuilder:
+                                  (_, __) =>
+                                      const Divider(height: 1, indent: 16),
+                              itemBuilder: (_, i) {
+                                final s = _searchSuggestions[i];
+                                return ListTile(
+                                  leading: const Icon(
+                                    Icons.location_on,
+                                    color: Colors.red,
+                                    size: 20,
+                                  ),
+                                  title: Text(
+                                    s['structured_formatting']?['main_text'] ??
+                                        s['description'],
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  subtitle: Text(
+                                    s['structured_formatting']?['secondary_text'] ??
+                                        '',
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.grey,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  dense: true,
+                                  onTap: () => _selectSuggestion(s),
+                                );
+                              },
+                            ),
+                          ),
                       ],
                     ),
                   ),
 
-                  // Bottom card when a center is selected
-                  if (_selectedCenter != null)
+                  // ── Quick filter chips ──
+                  // ── Quick filter chips ──
+                  if (!_showSuggestions)
+                    Positioned(
+                      top: MediaQuery.of(context).padding.top + 76,
+                      left: 12,
+                      right: 12,
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            _filterChip(
+                              '🔧 Garages',
+                              Colors.red,
+                              () =>
+                                  _searchNearbyByType('car_repair', 'Garages'),
+                            ),
+                            const SizedBox(width: 8),
+                            _filterChip(
+                              '🏪 Service Centers',
+                              Colors.orange,
+                              () => _searchNearbyByType(
+                                'car_dealer',
+                                'Service Centers',
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            _filterChip(
+                              '⛽ Fuel Stations',
+                              Colors.green,
+                              () => _searchNearbyByType(
+                                'gas_station',
+                                'Fuel Stations',
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            _filterChip(
+                              '🔋 EV Charging',
+                              Colors.blue,
+                              () => _searchNearbyByType(
+                                'electric_vehicle_charging_station',
+                                'EV Charging',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  // ── Distance + Duration badge ──
+                  if (_distanceText.isNotEmpty)
+                    Positioned(
+                      bottom: _selectedPlace != null ? 320 : 100,
+                      left: 16,
+                      right: 16,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.blue[800],
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: const [
+                            BoxShadow(color: Colors.black26, blurRadius: 6),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.directions_car,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '$_distanceText  ·  $_durationText',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            GestureDetector(
+                              onTap:
+                                  () => setState(() {
+                                    _polylines.clear();
+                                    _distanceText = "";
+                                    _durationText = "";
+                                  }),
+                              child: const Icon(
+                                Icons.close,
+                                color: Colors.white70,
+                                size: 18,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                  // ── Legend ──
+                  if (!_showSuggestions)
+                    Positioned(
+                      bottom: _selectedPlace != null ? 320 : 16,
+                      left: 12,
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: const [
+                            BoxShadow(color: Colors.black26, blurRadius: 4),
+                          ],
+                        ),
+                        child: const Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.location_on,
+                                  color: Colors.red,
+                                  size: 13,
+                                ),
+                                SizedBox(width: 4),
+                                Text("Garage", style: TextStyle(fontSize: 10)),
+                              ],
+                            ),
+                            SizedBox(height: 3),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.location_on,
+                                  color: Colors.orange,
+                                  size: 13,
+                                ),
+                                SizedBox(width: 4),
+                                Text(
+                                  "Service Center",
+                                  style: TextStyle(fontSize: 10),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 3),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.location_on,
+                                  color: Colors.cyan,
+                                  size: 13,
+                                ),
+                                SizedBox(width: 4),
+                                Text(
+                                  "Searched",
+                                  style: TextStyle(fontSize: 10),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                  // ── Map controls ──
+                  Positioned(
+                    right: 12,
+                    bottom: _selectedPlace != null ? 320 : 80,
+                    child: Column(
+                      children: [
+                        _mapBtn(Icons.add, () async {
+                          (await _mapController.future).animateCamera(
+                            CameraUpdate.zoomIn(),
+                          );
+                        }),
+                        const SizedBox(height: 8),
+                        _mapBtn(Icons.remove, () async {
+                          (await _mapController.future).animateCamera(
+                            CameraUpdate.zoomOut(),
+                          );
+                        }),
+                        const SizedBox(height: 8),
+                        _mapBtn(Icons.refresh, () {
+                          setState(() {
+                            _polylines.clear();
+                            _distanceText = "";
+                            _durationText = "";
+                            _selectedPlace = null;
+                            _showReviews = false;
+                            _isCardCollapsed = false;
+                            _searchController.clear();
+                            _showSuggestions = false;
+                          });
+                          _searchNearbyPlaces();
+                        }),
+                        const SizedBox(height: 8),
+                        // My location button
+                        _mapBtn(Icons.my_location, () async {
+                          if (_userPosition != null) {
+                            final c = await _mapController.future;
+                            c.animateCamera(
+                              CameraUpdate.newLatLngZoom(
+                                LatLng(
+                                  _userPosition!.latitude,
+                                  _userPosition!.longitude,
+                                ),
+                                14,
+                              ),
+                            );
+                          }
+                        }),
+                      ],
+                    ),
+                  ),
+
+                  // ── Bottom place detail card ──
+                  if (_selectedPlace != null)
                     Positioned(
                       left: 0,
                       right: 0,
@@ -770,214 +931,308 @@ class _MapScreenState extends State<MapScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Service Center Info Card
                           AnimatedContainer(
-                            duration: Duration(milliseconds: 300),
+                            duration: const Duration(milliseconds: 300),
                             curve: Curves.easeInOut,
-                            height: _isCardCollapsed ? 150 : null,
-                            decoration: BoxDecoration(
+                            constraints: BoxConstraints(
+                              maxHeight:
+                                  _isCardCollapsed
+                                      ? 130
+                                      : MediaQuery.of(context).size.height *
+                                          0.52,
+                            ),
+                            decoration: const BoxDecoration(
                               color: Colors.white,
-                              borderRadius:
-                                  _showReviews
-                                      ? BorderRadius.only(
-                                        topLeft: Radius.circular(24),
-                                        topRight: Radius.circular(24),
-                                      )
-                                      : BorderRadius.vertical(
-                                        top: Radius.circular(24),
-                                      ),
+                              borderRadius: BorderRadius.vertical(
+                                top: Radius.circular(24),
+                              ),
                               boxShadow: [
                                 BoxShadow(
                                   color: Colors.black26,
-                                  blurRadius: 10,
+                                  blurRadius: 12,
                                   offset: Offset(0, -2),
                                 ),
                               ],
                             ),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 16,
-                            ),
                             child: SingleChildScrollView(
+                              padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
                               child: Column(
-                                mainAxisSize: MainAxisSize.min,
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // Drag indicator
+                                  // Drag handle
                                   Center(
-                                    child: Container(
-                                      width: 40,
-                                      height: 5,
-                                      decoration: BoxDecoration(
-                                        color: Colors.grey[300],
-                                        borderRadius: BorderRadius.circular(10),
+                                    child: GestureDetector(
+                                      onTap:
+                                          () => setState(
+                                            () =>
+                                                _isCardCollapsed =
+                                                    !_isCardCollapsed,
+                                          ),
+                                      child: Container(
+                                        width: 40,
+                                        height: 5,
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey[300],
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   ),
-                                  SizedBox(height: 12),
+                                  const SizedBox(height: 10),
 
-                                  // Title & location
+                                  // Photo
+                                  if (_selectedPlace!['photo_ref'] != null)
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Image.network(
+                                        'https://maps.googleapis.com/maps/api/place/photo'
+                                        '?maxwidth=600&photo_reference=${_selectedPlace!['photo_ref']}'
+                                        '&key=$_googleApiKey',
+                                        height: 150,
+                                        width: double.infinity,
+                                        fit: BoxFit.cover,
+                                        errorBuilder:
+                                            (_, __, ___) => const SizedBox(),
+                                      ),
+                                    ),
+                                  const SizedBox(height: 10),
+
+                                  // Name
                                   Text(
-                                    _selectedCenter!['name'],
-                                    style: TextStyle(
+                                    _selectedPlace!['name'],
+                                    style: const TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                  SizedBox(height: 4),
+                                  const SizedBox(height: 4),
+
+                                  // Rating row
                                   Row(
                                     children: [
-                                      Icon(
-                                        Icons.location_on,
+                                      const Icon(
+                                        Icons.star,
+                                        color: Colors.amber,
                                         size: 16,
-                                        color: Colors.red,
                                       ),
-                                      SizedBox(width: 4),
+                                      const SizedBox(width: 4),
                                       Text(
-                                        "(${_selectedCenter!['lat']}, ${_selectedCenter!['lng']})",
-                                        style: TextStyle(
-                                          color: Colors.grey[700],
-                                          fontSize: 14,
+                                        '${_selectedPlace!['rating']}  ·  ${_selectedPlace!['total_ratings']} reviews',
+                                        style: const TextStyle(fontSize: 13),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color:
+                                              _selectedPlace!['open_now'] ==
+                                                      true
+                                                  ? Colors.green[50]
+                                                  : Colors.red[50],
+                                          borderRadius: BorderRadius.circular(
+                                            6,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          _selectedPlace!['open_now'] == true
+                                              ? 'Open'
+                                              : 'Closed',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold,
+                                            color:
+                                                _selectedPlace!['open_now'] ==
+                                                        true
+                                                    ? Colors.green[700]
+                                                    : Colors.red[700],
+                                          ),
                                         ),
                                       ),
                                     ],
                                   ),
-                                  SizedBox(height: 12),
+                                  const SizedBox(height: 4),
 
-                                  // Description
-                                  Text(
-                                    _selectedCenter!['description'],
-                                    style: TextStyle(fontSize: 14),
-                                  ),
-                                  SizedBox(height: 12),
+                                  // Address
+                                  if ((_selectedPlace!['address'] ?? '')
+                                      .isNotEmpty)
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.location_on,
+                                          size: 13,
+                                          color: Colors.red,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Expanded(
+                                          child: Text(
+                                            _selectedPlace!['address'],
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey[700],
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  const SizedBox(height: 12),
 
-                                  // Buttons Row
+                                  // ── Action buttons (like Google Maps) ──
                                   Row(
                                     mainAxisAlignment:
                                         MainAxisAlignment.spaceEvenly,
                                     children: [
-                                      _buildCardButton(
-                                        Icons.arrow_back,
-                                        "Back",
-                                        Colors.red,
-                                        onPressed: () {
-                                          setState(() {
-                                            _selectedCenter = null;
-                                            _isCardCollapsed =
-                                                false; // reset on back
-                                          });
-                                        },
-                                      ),
-                                      _buildCardButton(
-                                        Icons.phone,
-                                        "Call",
-                                        Colors.green,
-                                        onPressed: () {
-                                          if (_selectedCenter!['phone'] !=
-                                              null) {
-                                            _makePhoneCall(
-                                              _selectedCenter!['phone'],
-                                            );
-                                          } else {
-                                            ScaffoldMessenger.of(
-                                              context,
-                                            ).showSnackBar(
-                                              SnackBar(
-                                                content: Text(
-                                                  "No phone number available.",
-                                                ),
-                                              ),
-                                            );
-                                          }
-                                        },
-                                      ),
-                                      _buildCardButton(
+                                      _actionBtn(
                                         Icons.directions,
                                         "Directions",
                                         Colors.blue,
-                                        onPressed: () {
-                                          final LatLng centerLocation = LatLng(
-                                            _selectedCenter!["lat"],
-                                            _selectedCenter!["lng"],
+                                        () {
+                                          _getRoute(
+                                            _selectedPlace!['lat'],
+                                            _selectedPlace!['lng'],
                                           );
-                                          _getRoute(centerLocation);
-
-                                          setState(() {
-                                            _isCardCollapsed =
-                                                !_isCardCollapsed;
-                                          });
                                         },
                                       ),
-
-                                      _buildCardButton(
-                                        Icons.feedback,
-                                        "Feedbacks",
+                                      _actionBtn(
+                                        Icons.open_in_new,
+                                        "Open Maps",
                                         Colors.green,
-                                        onPressed: () async {
-                                          setState(() {
-                                            _showReviews = !_showReviews;
-                                          });
-
-                                          if (!_showReviews) {
-                                            final result = await Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder:
-                                                    (context) => RatingScreen(
-                                                      serviceCenterId:
-                                                          _selectedCenter!['name'],
-                                                    ),
-                                              ),
-                                            );
-
-                                            setState(() {
-                                              _showReviews = true;
-                                            });
-                                          }
+                                        () {
+                                          _openInGoogleMaps(
+                                            _selectedPlace!['lat'],
+                                            _selectedPlace!['lng'],
+                                          );
                                         },
                                       ),
-                                      _buildCardButton(
+                                      if ((_selectedPlace!['phone'] ?? '')
+                                          .isNotEmpty)
+                                        _actionBtn(
+                                          Icons.phone,
+                                          "Call",
+                                          Colors.teal,
+                                          () {
+                                            _makePhoneCall(
+                                              _selectedPlace!['phone'],
+                                            );
+                                          },
+                                        ),
+                                      if ((_selectedPlace!['website'] ?? '')
+                                          .isNotEmpty)
+                                        _actionBtn(
+                                          Icons.language,
+                                          "Website",
+                                          Colors.indigo,
+                                          () {
+                                            _openWebsite(
+                                              _selectedPlace!['website'],
+                                            );
+                                          },
+                                        ),
+                                      _actionBtn(
                                         Icons.share,
                                         "Share",
                                         Colors.orange,
-                                        onPressed: () {
-                                          final shareText =
-                                              'Check out this service center:\n'
-                                              '${_selectedCenter!['name']}\n${_selectedCenter!['description']}\n'
-                                              'Location: https://www.google.com/maps/search/?api=1&query=${_selectedCenter!['lat']},${_selectedCenter!['lng']}';
-                                          Share.share(shareText);
+                                        () {
+                                          Share.share(
+                                            '${_selectedPlace!['name']}\n${_selectedPlace!['address']}\n'
+                                            'https://www.google.com/maps/search/?api=1'
+                                            '&query=${_selectedPlace!['lat']},${_selectedPlace!['lng']}',
+                                          );
+                                        },
+                                      ),
+                                      _actionBtn(
+                                        _showReviews
+                                            ? Icons.expand_less
+                                            : Icons.reviews,
+                                        "Reviews",
+                                        Colors.purple,
+                                        () => setState(
+                                          () => _showReviews = !_showReviews,
+                                        ),
+                                      ),
+                                      _actionBtn(
+                                        Icons.close,
+                                        "Close",
+                                        Colors.grey,
+                                        () {
+                                          setState(() {
+                                            _selectedPlace = null;
+                                            _showReviews = false;
+                                          });
                                         },
                                       ),
                                     ],
                                   ),
 
-                                  Padding(
-                                    padding: const EdgeInsets.all(16.0),
-                                    child: Center(
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(12),
-                                        child: Image.asset(
-                                          _selectedCenter!['image'],
-                                          height: 200,
-                                          width: 500,
-                                          fit: BoxFit.cover,
+                                  // Opening hours
+                                  if ((_selectedPlace!['hours'] as List)
+                                      .isNotEmpty) ...[
+                                    const SizedBox(height: 12),
+                                    const Text(
+                                      "Opening Hours",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    ...(_selectedPlace!['hours'] as List).map(
+                                      (h) => Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 1,
+                                        ),
+                                        child: Text(
+                                          h.toString(),
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey[700],
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  ),
-
-                                  SizedBox(height: 12),
+                                  ],
+                                  const SizedBox(height: 8),
                                 ],
                               ),
                             ),
                           ),
 
-                          // Reviews Section
+                          // Reviews panel
                           if (_showReviews)
                             Container(
-                              height: MediaQuery.of(context).size.height * 0.4,
+                              constraints: BoxConstraints(
+                                maxHeight:
+                                    MediaQuery.of(context).size.height * 0.32,
+                              ),
                               color: Colors.white,
-                              child: _buildReviewsList(),
+                              child:
+                                  _reviews.isNotEmpty
+                                      ? ListView.builder(
+                                        padding: const EdgeInsets.fromLTRB(
+                                          16,
+                                          8,
+                                          16,
+                                          16,
+                                        ),
+                                        itemCount: _reviews.length,
+                                        itemBuilder:
+                                            (_, i) => _reviewCard(_reviews[i]),
+                                      )
+                                      : const Center(
+                                        child: Padding(
+                                          padding: EdgeInsets.all(16),
+                                          child: Text(
+                                            "No reviews available",
+                                            style: TextStyle(
+                                              color: Colors.grey,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
                             ),
                         ],
                       ),
@@ -985,71 +1240,178 @@ class _MapScreenState extends State<MapScreen> {
                 ],
               ),
 
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.blue,
-        child: const Icon(Icons.my_location, color: Colors.white),
-        onPressed: () async {
-          final LocationData locationData = await _location.getLocation();
-          setState(() {
-            _userLocation = locationData;
-          });
-        },
-      ),
-
-      // Bottom nav bar
+      // ── Bottom nav ──
       bottomNavigationBar: BottomNavigationBar(
         selectedItemColor: Colors.red,
         unselectedItemColor: Colors.black,
         currentIndex: _selectedIndex,
         onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-
+          setState(() => _selectedIndex = index);
           switch (index) {
             case 0:
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (context) => DashboardScreen()),
+                MaterialPageRoute(builder: (_) => DashboardScreen()),
               );
               break;
             case 1:
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (context) => MapScreen()),
+                MaterialPageRoute(builder: (_) => MapScreen()),
               );
               break;
             case 2:
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => OBD2Page()),
+                MaterialPageRoute(builder: (_) => OBD2Page()),
               );
               break;
             case 3:
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => ServiceHistorypage()),
+                MaterialPageRoute(builder: (_) => ServiceHistorypage()),
               );
               break;
             case 4:
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => ProfileScreen()),
+                MaterialPageRoute(builder: (_) => ProfileScreen()),
               );
               break;
           }
         },
         items: [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.map), label: ''),
+          const BottomNavigationBarItem(icon: Icon(Icons.home), label: ''),
+          const BottomNavigationBarItem(icon: Icon(Icons.map), label: ''),
           BottomNavigationBarItem(
             icon: Image.asset('images/logo.png', height: 30),
             label: '',
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.history), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: ''),
+          const BottomNavigationBarItem(icon: Icon(Icons.history), label: ''),
+          const BottomNavigationBarItem(icon: Icon(Icons.person), label: ''),
         ],
       ),
     );
   }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
+  Widget _filterChip(String label, Color color, VoidCallback onTap) =>
+      GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
+            border: Border.all(color: color.withOpacity(0.3)),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: color,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      );
+
+  Widget _mapBtn(IconData icon, VoidCallback onTap) => GestureDetector(
+    onTap: onTap,
+    child: Container(
+      width: 38,
+      height: 38,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+        boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
+      ),
+      child: Icon(icon, size: 20, color: Colors.black87),
+    ),
+  );
+
+  Widget _actionBtn(
+    IconData icon,
+    String label,
+    Color color,
+    VoidCallback onTap,
+  ) => GestureDetector(
+    onTap: onTap,
+    child: Column(
+      children: [
+        CircleAvatar(
+          radius: 22,
+          backgroundColor: color.withOpacity(0.1),
+          child: Icon(icon, color: color, size: 20),
+        ),
+        const SizedBox(height: 4),
+        Text(label, style: const TextStyle(fontSize: 9)),
+      ],
+    ),
+  );
+
+  Widget _reviewCard(dynamic review) => Container(
+    margin: const EdgeInsets.only(bottom: 10),
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: Colors.grey[50],
+      borderRadius: BorderRadius.circular(10),
+      border: Border.all(color: Colors.grey[200]!),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            CircleAvatar(
+              radius: 14,
+              backgroundImage:
+                  review['profile_photo_url'] != null
+                      ? NetworkImage(review['profile_photo_url'])
+                      : null,
+              child:
+                  review['profile_photo_url'] == null
+                      ? const Icon(Icons.person, size: 14)
+                      : null,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                review['author_name'] ?? '',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+            Row(
+              children: List.generate(
+                5,
+                (i) => Icon(
+                  Icons.star,
+                  size: 12,
+                  color:
+                      i < (review['rating'] ?? 0)
+                          ? Colors.amber
+                          : Colors.grey[300],
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(
+          review['text'] ?? '',
+          style: const TextStyle(fontSize: 12, color: Colors.black87),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          review['relative_time_description'] ?? '',
+          style: const TextStyle(fontSize: 11, color: Colors.grey),
+        ),
+      ],
+    ),
+  );
 }
