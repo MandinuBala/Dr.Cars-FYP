@@ -2,6 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:dr_cars_fyp/auth/auth_service.dart';
 import 'signin.dart';
+import 'package:dr_cars_fyp/l10n/app_strings.dart';
+import 'package:dr_cars_fyp/providers/locale_provider.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -73,16 +75,17 @@ class _SignUpPageState extends State<SignUpPage> {
         decoration: InputDecoration(
           labelText: label,
           border: const OutlineInputBorder(),
-          suffixIcon: isPassword
-              ? IconButton(
-                  icon: Icon(
-                    _showPassword ? Icons.visibility : Icons.visibility_off,
-                  ),
-                  onPressed: () {
-                    setState(() => _showPassword = !_showPassword);
-                  },
-                )
-              : null,
+          suffixIcon:
+              isPassword
+                  ? IconButton(
+                    icon: Icon(
+                      _showPassword ? Icons.visibility : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() => _showPassword = !_showPassword);
+                    },
+                  )
+                  : null,
         ),
       ),
     );
@@ -90,63 +93,90 @@ class _SignUpPageState extends State<SignUpPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Create Account"),
-        backgroundColor: Colors.black,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              _buildTextField(label: "Full Name", controller: _nameController),
-              _buildTextField(label: "Email", controller: _emailController),
-              _buildTextField(label: "Username", controller: _usernameController),
-              _buildTextField(
-                  label: "Password", controller: _passwordController, isPassword: true),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                value: _role,
-                decoration: const InputDecoration(
-                  labelText: "Select Role",
-                  border: OutlineInputBorder(),
-                ),
-                items: const [
-                  DropdownMenuItem(value: "Vehicle Owner", child: Text("Vehicle Owner")),
-                  DropdownMenuItem(value: "Service Center", child: Text("Service Center")),
-                ],
-                onChanged: (value) {
-                  if (value != null) setState(() => _role = value);
-                },
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _isLoading ? null : _handleSignUp,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(double.infinity, 50),
-                ),
-                child: _isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text("Sign Up"),
-              ),
-              const SizedBox(height: 16),
-              TextButton(
-                onPressed: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (_) => SignInScreen()),
-                  );
-                },
-                child: const Text("Already have an account? Sign In"),
-              ),
-            ],
+    return ValueListenableBuilder<String>(
+      valueListenable: localeNotifier,
+      builder: (context, lang, _) {
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(AppStrings.get('signup_title', lang)),
+            backgroundColor: Colors.black,
+            foregroundColor: Colors.white,
           ),
-        ),
-      ),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  _buildTextField(
+                    label: AppStrings.get('full_name', lang),
+                    controller: _nameController,
+                  ),
+                  _buildTextField(
+                    label: AppStrings.get('email', lang),
+                    controller: _emailController,
+                  ),
+                  _buildTextField(
+                    label: AppStrings.get('username', lang),
+                    controller: _usernameController,
+                  ),
+                  _buildTextField(
+                    label: AppStrings.get('password', lang),
+                    controller: _passwordController,
+                    isPassword: true,
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    value: _role,
+                    decoration: InputDecoration(
+                      labelText: AppStrings.get('create_account_as', lang),
+                      border: const OutlineInputBorder(),
+                    ),
+                    items: [
+                      DropdownMenuItem(
+                        value: "Vehicle Owner",
+                        child: Text(AppStrings.get('vehicle_owner', lang)),
+                      ),
+                      DropdownMenuItem(
+                        value: "Service Center",
+                        child: Text(AppStrings.get('service_center', lang)),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) setState(() => _role = value);
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: _isLoading ? null : _handleSignUp,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.black,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(double.infinity, 50),
+                    ),
+                    child:
+                        _isLoading
+                            ? const CircularProgressIndicator(
+                              color: Colors.white,
+                            )
+                            : Text(AppStrings.get('sign_up', lang)),
+                  ),
+                  const SizedBox(height: 16),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (_) => SignInScreen()),
+                      );
+                    },
+                    child: Text(AppStrings.get('already_account', lang)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

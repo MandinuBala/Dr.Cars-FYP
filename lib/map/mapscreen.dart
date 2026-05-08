@@ -10,6 +10,10 @@ import 'package:geolocator/geolocator.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
+import 'package:dr_cars_fyp/l10n/app_strings.dart';
+import 'package:dr_cars_fyp/providers/locale_provider.dart';
+import 'package:dr_cars_fyp/theme/app_theme.dart';
+import 'package:dr_cars_fyp/widgets/app_bottom_nav.dart';
 
 const String _googleApiKey = 'AIzaSyDWVyDHQmAKS3Q4dvsl1qtrzjvmFbnSNaM';
 int _selectedIndex = 1;
@@ -510,787 +514,774 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      resizeToAvoidBottomInset: false,
-      body:
-          _userPosition == null
-              ? const Scaffold(body: Center(child: CircularProgressIndicator()))
-              : Stack(
-                children: [
-                  // ── Google Map (full screen, no AppBar) ──
-                  GoogleMap(
-                    initialCameraPosition: CameraPosition(
-                      target: LatLng(
-                        _userPosition!.latitude,
-                        _userPosition!.longitude,
-                      ),
-                      zoom: 13,
-                    ),
-                    markers: _markers,
-                    polylines: _polylines,
-                    myLocationEnabled: true,
-                    myLocationButtonEnabled: false,
-                    zoomControlsEnabled: false,
-                    mapType: MapType.normal,
-                    onMapCreated: (c) => _mapController.complete(c),
-                    onTap: (_) {
-                      setState(() {
-                        _selectedPlace = null;
-                        _showReviews = false;
-                        _showSuggestions = false;
-                      });
-                      _searchFocus.unfocus();
-                    },
-                  ),
-
-                  // ── Loading spinner ──
-                  if (_isLoading)
-                    Container(
-                      color: Colors.black12,
-                      child: const Center(child: CircularProgressIndicator()),
-                    ),
-
-                  // ── TOP SEARCH BAR (like Google Maps) ──
-                  Positioned(
-                    top: MediaQuery.of(context).padding.top + 10,
-                    left: 12,
-                    right: 12,
-                    child: Column(
-                      children: [
-                        // Search bar
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Colors.black26,
-                                blurRadius: 8,
-                                offset: Offset(0, 2),
-                              ),
-                            ],
+    return ValueListenableBuilder<String>(
+      valueListenable: localeNotifier,
+      builder: (context, lang, _) {
+        return Scaffold(
+          resizeToAvoidBottomInset: false,
+          body:
+              _userPosition == null
+                  ? const Scaffold(
+                    body: Center(child: CircularProgressIndicator()),
+                  )
+                  : Stack(
+                    children: [
+                      // ── Google Map ──
+                      GoogleMap(
+                        initialCameraPosition: CameraPosition(
+                          target: LatLng(
+                            _userPosition!.latitude,
+                            _userPosition!.longitude,
                           ),
-                          child: Row(
-                            children: [
-                              // Back button
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.arrow_back,
-                                  color: Colors.black87,
-                                ),
-                                onPressed:
-                                    () => Navigator.pushReplacement(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => DashboardScreen(),
-                                      ),
-                                    ),
-                              ),
-                              // Search field
-                              Expanded(
-                                child: TextField(
-                                  controller: _searchController,
-                                  focusNode: _searchFocus,
-                                  decoration: const InputDecoration(
-                                    hintText:
-                                        'Search service centers, garages...',
-                                    hintStyle: TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.grey,
-                                    ),
-                                    border: InputBorder.none,
-                                    contentPadding: EdgeInsets.symmetric(
-                                      vertical: 14,
-                                    ),
-                                  ),
-                                  onSubmitted: (val) {
-                                    if (val.isNotEmpty)
-                                      _fetchAutocompleteSuggestions(val);
-                                  },
-                                ),
-                              ),
-                              // Clear / Search icon
-                              if (_searchController.text.isNotEmpty)
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.close,
-                                    color: Colors.grey,
-                                  ),
-                                  onPressed: () {
-                                    _searchController.clear();
-                                    setState(() {
-                                      _showSuggestions = false;
-                                      _searchSuggestions = [];
-                                    });
-                                  },
-                                )
-                              else
-                                _isSearching
-                                    ? const Padding(
-                                      padding: EdgeInsets.all(12),
-                                      child: SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      ),
-                                    )
-                                    : const Padding(
-                                      padding: EdgeInsets.all(12),
-                                      child: Icon(
-                                        Icons.search,
-                                        color: Colors.grey,
-                                      ),
-                                    ),
-                            ],
+                          zoom: 13,
+                        ),
+                        markers: _markers,
+                        polylines: _polylines,
+                        myLocationEnabled: true,
+                        myLocationButtonEnabled: false,
+                        zoomControlsEnabled: false,
+                        mapType: MapType.normal,
+                        onMapCreated: (c) => _mapController.complete(c),
+                        onTap: (_) {
+                          setState(() {
+                            _selectedPlace = null;
+                            _showReviews = false;
+                            _showSuggestions = false;
+                          });
+                          _searchFocus.unfocus();
+                        },
+                      ),
+
+                      // ── Loading spinner ──
+                      if (_isLoading)
+                        Container(
+                          color: Colors.black12,
+                          child: const Center(
+                            child: CircularProgressIndicator(),
                           ),
                         ),
 
-                        // ── Autocomplete suggestions dropdown ──
-                        if (_showSuggestions && _searchSuggestions.isNotEmpty)
-                          Container(
-                            margin: const EdgeInsets.only(top: 4),
+                      // ── Search bar ──
+                      Positioned(
+                        top: MediaQuery.of(context).padding.top + 10,
+                        left: 12,
+                        right: 12,
+                        child: Column(
+                          children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: const [
+                                  BoxShadow(
+                                    color: Colors.black26,
+                                    blurRadius: 8,
+                                    offset: Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.arrow_back,
+                                      color: Colors.black87,
+                                    ),
+                                    onPressed:
+                                        () => Navigator.pushReplacement(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => DashboardScreen(),
+                                          ),
+                                        ),
+                                  ),
+                                  Expanded(
+                                    child: TextField(
+                                      controller: _searchController,
+                                      focusNode: _searchFocus,
+                                      decoration: InputDecoration(
+                                        hintText: AppStrings.get(
+                                          'search_hint',
+                                          lang,
+                                        ),
+                                        hintStyle: const TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey,
+                                        ),
+                                        border: InputBorder.none,
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
+                                              vertical: 14,
+                                            ),
+                                      ),
+                                      onSubmitted: (val) {
+                                        if (val.isNotEmpty)
+                                          _fetchAutocompleteSuggestions(val);
+                                      },
+                                    ),
+                                  ),
+                                  if (_searchController.text.isNotEmpty)
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.close,
+                                        color: Colors.grey,
+                                      ),
+                                      onPressed: () {
+                                        _searchController.clear();
+                                        setState(() {
+                                          _showSuggestions = false;
+                                          _searchSuggestions = [];
+                                        });
+                                      },
+                                    )
+                                  else
+                                    _isSearching
+                                        ? const Padding(
+                                          padding: EdgeInsets.all(12),
+                                          child: SizedBox(
+                                            width: 20,
+                                            height: 20,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                            ),
+                                          ),
+                                        )
+                                        : const Padding(
+                                          padding: EdgeInsets.all(12),
+                                          child: Icon(
+                                            Icons.search,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                ],
+                              ),
+                            ),
+
+                            // ── Autocomplete suggestions ──
+                            if (_showSuggestions &&
+                                _searchSuggestions.isNotEmpty)
+                              Container(
+                                margin: const EdgeInsets.only(top: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: const [
+                                    BoxShadow(
+                                      color: Colors.black26,
+                                      blurRadius: 6,
+                                    ),
+                                  ],
+                                ),
+                                child: ListView.separated(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  itemCount:
+                                      _searchSuggestions.length > 5
+                                          ? 5
+                                          : _searchSuggestions.length,
+                                  separatorBuilder:
+                                      (_, __) =>
+                                          const Divider(height: 1, indent: 16),
+                                  itemBuilder: (_, i) {
+                                    final s = _searchSuggestions[i];
+                                    return ListTile(
+                                      leading: const Icon(
+                                        Icons.location_on,
+                                        color: Colors.red,
+                                        size: 20,
+                                      ),
+                                      title: Text(
+                                        s['structured_formatting']?['main_text'] ??
+                                            s['description'],
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      subtitle: Text(
+                                        s['structured_formatting']?['secondary_text'] ??
+                                            '',
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          color: Colors.grey,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      dense: true,
+                                      onTap: () => _selectSuggestion(s),
+                                    );
+                                  },
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+
+                      // ── Filter chips ──
+                      if (!_showSuggestions)
+                        Positioned(
+                          top: MediaQuery.of(context).padding.top + 76,
+                          left: 12,
+                          right: 12,
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: [
+                                _filterChip(
+                                  AppStrings.get('garages', lang),
+                                  Colors.red,
+                                  () => _searchNearbyByType(
+                                    'car_repair',
+                                    'Garages',
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                _filterChip(
+                                  AppStrings.get('service_centers', lang),
+                                  Colors.orange,
+                                  () => _searchNearbyByType(
+                                    'car_dealer',
+                                    'Service Centers',
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                _filterChip(
+                                  AppStrings.get('fuel_stations', lang),
+                                  Colors.green,
+                                  () => _searchNearbyByType(
+                                    'gas_station',
+                                    'Fuel Stations',
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                _filterChip(
+                                  AppStrings.get('ev_charging', lang),
+                                  Colors.blue,
+                                  () => _searchNearbyByType(
+                                    'electric_vehicle_charging_station',
+                                    'EV Charging',
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                      // ── Distance badge ──
+                      if (_distanceText.isNotEmpty)
+                        Positioned(
+                          bottom: _selectedPlace != null ? 320 : 100,
+                          left: 16,
+                          right: 16,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 10,
+                            ),
                             decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
+                              color: Colors.blue[800],
+                              borderRadius: BorderRadius.circular(20),
                               boxShadow: const [
                                 BoxShadow(color: Colors.black26, blurRadius: 6),
                               ],
                             ),
-                            child: ListView.separated(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount:
-                                  _searchSuggestions.length > 5
-                                      ? 5
-                                      : _searchSuggestions.length,
-                              separatorBuilder:
-                                  (_, __) =>
-                                      const Divider(height: 1, indent: 16),
-                              itemBuilder: (_, i) {
-                                final s = _searchSuggestions[i];
-                                return ListTile(
-                                  leading: const Icon(
-                                    Icons.location_on,
-                                    color: Colors.red,
-                                    size: 20,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.directions_car,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '$_distanceText  ·  $_durationText',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
                                   ),
-                                  title: Text(
-                                    s['structured_formatting']?['main_text'] ??
-                                        s['description'],
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(width: 12),
+                                GestureDetector(
+                                  onTap:
+                                      () => setState(() {
+                                        _polylines.clear();
+                                        _distanceText = "";
+                                        _durationText = "";
+                                      }),
+                                  child: const Icon(
+                                    Icons.close,
+                                    color: Colors.white70,
+                                    size: 18,
                                   ),
-                                  subtitle: Text(
-                                    s['structured_formatting']?['secondary_text'] ??
-                                        '',
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      color: Colors.grey,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  dense: true,
-                                  onTap: () => _selectSuggestion(s),
-                                );
-                              },
+                                ),
+                              ],
                             ),
                           ),
-                      ],
-                    ),
-                  ),
+                        ),
 
-                  // ── Quick filter chips ──
-                  // ── Quick filter chips ──
-                  if (!_showSuggestions)
-                    Positioned(
-                      top: MediaQuery.of(context).padding.top + 76,
-                      left: 12,
-                      right: 12,
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            _filterChip(
-                              '🔧 Garages',
-                              Colors.red,
-                              () =>
-                                  _searchNearbyByType('car_repair', 'Garages'),
-                            ),
-                            const SizedBox(width: 8),
-                            _filterChip(
-                              '🏪 Service Centers',
-                              Colors.orange,
-                              () => _searchNearbyByType(
-                                'car_dealer',
-                                'Service Centers',
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            _filterChip(
-                              '⛽ Fuel Stations',
-                              Colors.green,
-                              () => _searchNearbyByType(
-                                'gas_station',
-                                'Fuel Stations',
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            _filterChip(
-                              '🔋 EV Charging',
-                              Colors.blue,
-                              () => _searchNearbyByType(
-                                'electric_vehicle_charging_station',
-                                'EV Charging',
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  // ── Distance + Duration badge ──
-                  if (_distanceText.isNotEmpty)
-                    Positioned(
-                      bottom: _selectedPlace != null ? 320 : 100,
-                      left: 16,
-                      right: 16,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 10,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.blue[800],
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: const [
-                            BoxShadow(color: Colors.black26, blurRadius: 6),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              Icons.directions_car,
+                      // ── Legend ──
+                      if (!_showSuggestions)
+                        Positioned(
+                          bottom: _selectedPlace != null ? 320 : 16,
+                          left: 12,
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
                               color: Colors.white,
-                              size: 18,
+                              borderRadius: BorderRadius.circular(8),
+                              boxShadow: const [
+                                BoxShadow(color: Colors.black26, blurRadius: 4),
+                              ],
                             ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '$_distanceText  ·  $_durationText',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            GestureDetector(
-                              onTap:
-                                  () => setState(() {
-                                    _polylines.clear();
-                                    _distanceText = "";
-                                    _durationText = "";
-                                  }),
-                              child: const Icon(
-                                Icons.close,
-                                color: Colors.white70,
-                                size: 18,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                  // ── Legend ──
-                  if (!_showSuggestions)
-                    Positioned(
-                      bottom: _selectedPlace != null ? 320 : 16,
-                      left: 12,
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: const [
-                            BoxShadow(color: Colors.black26, blurRadius: 4),
-                          ],
-                        ),
-                        child: const Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
+                            child: const Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Icon(
-                                  Icons.location_on,
-                                  color: Colors.red,
-                                  size: 13,
-                                ),
-                                SizedBox(width: 4),
-                                Text("Garage", style: TextStyle(fontSize: 10)),
-                              ],
-                            ),
-                            SizedBox(height: 3),
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.location_on,
-                                  color: Colors.orange,
-                                  size: 13,
-                                ),
-                                SizedBox(width: 4),
-                                Text(
-                                  "Service Center",
-                                  style: TextStyle(fontSize: 10),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 3),
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.location_on,
-                                  color: Colors.cyan,
-                                  size: 13,
-                                ),
-                                SizedBox(width: 4),
-                                Text(
-                                  "Searched",
-                                  style: TextStyle(fontSize: 10),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                  // ── Map controls ──
-                  Positioned(
-                    right: 12,
-                    bottom: _selectedPlace != null ? 320 : 80,
-                    child: Column(
-                      children: [
-                        _mapBtn(Icons.add, () async {
-                          (await _mapController.future).animateCamera(
-                            CameraUpdate.zoomIn(),
-                          );
-                        }),
-                        const SizedBox(height: 8),
-                        _mapBtn(Icons.remove, () async {
-                          (await _mapController.future).animateCamera(
-                            CameraUpdate.zoomOut(),
-                          );
-                        }),
-                        const SizedBox(height: 8),
-                        _mapBtn(Icons.refresh, () {
-                          setState(() {
-                            _polylines.clear();
-                            _distanceText = "";
-                            _durationText = "";
-                            _selectedPlace = null;
-                            _showReviews = false;
-                            _isCardCollapsed = false;
-                            _searchController.clear();
-                            _showSuggestions = false;
-                          });
-                          _searchNearbyPlaces();
-                        }),
-                        const SizedBox(height: 8),
-                        // My location button
-                        _mapBtn(Icons.my_location, () async {
-                          if (_userPosition != null) {
-                            final c = await _mapController.future;
-                            c.animateCamera(
-                              CameraUpdate.newLatLngZoom(
-                                LatLng(
-                                  _userPosition!.latitude,
-                                  _userPosition!.longitude,
-                                ),
-                                14,
-                              ),
-                            );
-                          }
-                        }),
-                      ],
-                    ),
-                  ),
-
-                  // ── Bottom place detail card ──
-                  if (_selectedPlace != null)
-                    Positioned(
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          AnimatedContainer(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                            constraints: BoxConstraints(
-                              maxHeight:
-                                  _isCardCollapsed
-                                      ? 130
-                                      : MediaQuery.of(context).size.height *
-                                          0.52,
-                            ),
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.vertical(
-                                top: Radius.circular(24),
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black26,
-                                  blurRadius: 12,
-                                  offset: Offset(0, -2),
-                                ),
-                              ],
-                            ),
-                            child: SingleChildScrollView(
-                              padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Drag handle
-                                  Center(
-                                    child: GestureDetector(
-                                      onTap:
-                                          () => setState(
-                                            () =>
-                                                _isCardCollapsed =
-                                                    !_isCardCollapsed,
-                                          ),
-                                      child: Container(
-                                        width: 40,
-                                        height: 5,
-                                        decoration: BoxDecoration(
-                                          color: Colors.grey[300],
-                                          borderRadius: BorderRadius.circular(
-                                            10,
-                                          ),
-                                        ),
-                                      ),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.location_on,
+                                      color: Colors.red,
+                                      size: 13,
                                     ),
-                                  ),
-                                  const SizedBox(height: 10),
-
-                                  // Photo
-                                  if (_selectedPlace!['photo_ref'] != null)
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(12),
-                                      child: Image.network(
-                                        'https://maps.googleapis.com/maps/api/place/photo'
-                                        '?maxwidth=600&photo_reference=${_selectedPlace!['photo_ref']}'
-                                        '&key=$_googleApiKey',
-                                        height: 150,
-                                        width: double.infinity,
-                                        fit: BoxFit.cover,
-                                        errorBuilder:
-                                            (_, __, ___) => const SizedBox(),
-                                      ),
-                                    ),
-                                  const SizedBox(height: 10),
-
-                                  // Name
-                                  Text(
-                                    _selectedPlace!['name'],
-                                    style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-
-                                  // Rating row
-                                  Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.star,
-                                        color: Colors.amber,
-                                        size: 16,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        '${_selectedPlace!['rating']}  ·  ${_selectedPlace!['total_ratings']} reviews',
-                                        style: const TextStyle(fontSize: 13),
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 2,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color:
-                                              _selectedPlace!['open_now'] ==
-                                                      true
-                                                  ? Colors.green[50]
-                                                  : Colors.red[50],
-                                          borderRadius: BorderRadius.circular(
-                                            6,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          _selectedPlace!['open_now'] == true
-                                              ? 'Open'
-                                              : 'Closed',
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.bold,
-                                            color:
-                                                _selectedPlace!['open_now'] ==
-                                                        true
-                                                    ? Colors.green[700]
-                                                    : Colors.red[700],
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 4),
-
-                                  // Address
-                                  if ((_selectedPlace!['address'] ?? '')
-                                      .isNotEmpty)
-                                    Row(
-                                      children: [
-                                        const Icon(
-                                          Icons.location_on,
-                                          size: 13,
-                                          color: Colors.red,
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Expanded(
-                                          child: Text(
-                                            _selectedPlace!['address'],
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.grey[700],
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  const SizedBox(height: 12),
-
-                                  // ── Action buttons (like Google Maps) ──
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceEvenly,
-                                    children: [
-                                      _actionBtn(
-                                        Icons.directions,
-                                        "Directions",
-                                        Colors.blue,
-                                        () {
-                                          _getRoute(
-                                            _selectedPlace!['lat'],
-                                            _selectedPlace!['lng'],
-                                          );
-                                        },
-                                      ),
-                                      _actionBtn(
-                                        Icons.open_in_new,
-                                        "Open Maps",
-                                        Colors.green,
-                                        () {
-                                          _openInGoogleMaps(
-                                            _selectedPlace!['lat'],
-                                            _selectedPlace!['lng'],
-                                          );
-                                        },
-                                      ),
-                                      if ((_selectedPlace!['phone'] ?? '')
-                                          .isNotEmpty)
-                                        _actionBtn(
-                                          Icons.phone,
-                                          "Call",
-                                          Colors.teal,
-                                          () {
-                                            _makePhoneCall(
-                                              _selectedPlace!['phone'],
-                                            );
-                                          },
-                                        ),
-                                      if ((_selectedPlace!['website'] ?? '')
-                                          .isNotEmpty)
-                                        _actionBtn(
-                                          Icons.language,
-                                          "Website",
-                                          Colors.indigo,
-                                          () {
-                                            _openWebsite(
-                                              _selectedPlace!['website'],
-                                            );
-                                          },
-                                        ),
-                                      _actionBtn(
-                                        Icons.share,
-                                        "Share",
-                                        Colors.orange,
-                                        () {
-                                          Share.share(
-                                            '${_selectedPlace!['name']}\n${_selectedPlace!['address']}\n'
-                                            'https://www.google.com/maps/search/?api=1'
-                                            '&query=${_selectedPlace!['lat']},${_selectedPlace!['lng']}',
-                                          );
-                                        },
-                                      ),
-                                      _actionBtn(
-                                        _showReviews
-                                            ? Icons.expand_less
-                                            : Icons.reviews,
-                                        "Reviews",
-                                        Colors.purple,
-                                        () => setState(
-                                          () => _showReviews = !_showReviews,
-                                        ),
-                                      ),
-                                      _actionBtn(
-                                        Icons.close,
-                                        "Close",
-                                        Colors.grey,
-                                        () {
-                                          setState(() {
-                                            _selectedPlace = null;
-                                            _showReviews = false;
-                                          });
-                                        },
-                                      ),
-                                    ],
-                                  ),
-
-                                  // Opening hours
-                                  if ((_selectedPlace!['hours'] as List)
-                                      .isNotEmpty) ...[
-                                    const SizedBox(height: 12),
-                                    const Text(
-                                      "Opening Hours",
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    ...(_selectedPlace!['hours'] as List).map(
-                                      (h) => Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 1,
-                                        ),
-                                        child: Text(
-                                          h.toString(),
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.grey[700],
-                                          ),
-                                        ),
-                                      ),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      "Garage",
+                                      style: TextStyle(fontSize: 10),
                                     ),
                                   ],
-                                  const SizedBox(height: 8),
-                                ],
-                              ),
+                                ),
+                                SizedBox(height: 3),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.location_on,
+                                      color: Colors.orange,
+                                      size: 13,
+                                    ),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      "Service Center",
+                                      style: TextStyle(fontSize: 10),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: 3),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.location_on,
+                                      color: Colors.cyan,
+                                      size: 13,
+                                    ),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      "Searched",
+                                      style: TextStyle(fontSize: 10),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
                           ),
+                        ),
 
-                          // Reviews panel
-                          if (_showReviews)
-                            Container(
-                              constraints: BoxConstraints(
-                                maxHeight:
-                                    MediaQuery.of(context).size.height * 0.32,
-                              ),
-                              color: Colors.white,
-                              child:
-                                  _reviews.isNotEmpty
-                                      ? ListView.builder(
-                                        padding: const EdgeInsets.fromLTRB(
-                                          16,
-                                          8,
-                                          16,
-                                          16,
-                                        ),
-                                        itemCount: _reviews.length,
-                                        itemBuilder:
-                                            (_, i) => _reviewCard(_reviews[i]),
-                                      )
-                                      : const Center(
-                                        child: Padding(
-                                          padding: EdgeInsets.all(16),
-                                          child: Text(
-                                            "No reviews available",
-                                            style: TextStyle(
-                                              color: Colors.grey,
+                      // ── Map controls ──
+                      Positioned(
+                        right: 12,
+                        bottom: _selectedPlace != null ? 320 : 80,
+                        child: Column(
+                          children: [
+                            _mapBtn(Icons.add, () async {
+                              (await _mapController.future).animateCamera(
+                                CameraUpdate.zoomIn(),
+                              );
+                            }),
+                            const SizedBox(height: 8),
+                            _mapBtn(Icons.remove, () async {
+                              (await _mapController.future).animateCamera(
+                                CameraUpdate.zoomOut(),
+                              );
+                            }),
+                            const SizedBox(height: 8),
+                            _mapBtn(Icons.refresh, () {
+                              setState(() {
+                                _polylines.clear();
+                                _distanceText = "";
+                                _durationText = "";
+                                _selectedPlace = null;
+                                _showReviews = false;
+                                _isCardCollapsed = false;
+                                _searchController.clear();
+                                _showSuggestions = false;
+                              });
+                              _searchNearbyPlaces();
+                            }),
+                            const SizedBox(height: 8),
+                            _mapBtn(Icons.my_location, () async {
+                              if (_userPosition != null) {
+                                final c = await _mapController.future;
+                                c.animateCamera(
+                                  CameraUpdate.newLatLngZoom(
+                                    LatLng(
+                                      _userPosition!.latitude,
+                                      _userPosition!.longitude,
+                                    ),
+                                    14,
+                                  ),
+                                );
+                              }
+                            }),
+                          ],
+                        ),
+                      ),
+
+                      // ── Place detail card ──
+                      if (_selectedPlace != null)
+                        Positioned(
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              AnimatedContainer(
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeInOut,
+                                constraints: BoxConstraints(
+                                  maxHeight:
+                                      _isCardCollapsed
+                                          ? 130
+                                          : MediaQuery.of(context).size.height *
+                                              0.52,
+                                ),
+                                decoration: const BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.vertical(
+                                    top: Radius.circular(24),
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black26,
+                                      blurRadius: 12,
+                                      offset: Offset(0, -2),
+                                    ),
+                                  ],
+                                ),
+                                child: SingleChildScrollView(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    20,
+                                    12,
+                                    20,
+                                    8,
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      // Drag handle
+                                      Center(
+                                        child: GestureDetector(
+                                          onTap:
+                                              () => setState(
+                                                () =>
+                                                    _isCardCollapsed =
+                                                        !_isCardCollapsed,
+                                              ),
+                                          child: Container(
+                                            width: 40,
+                                            height: 5,
+                                            decoration: BoxDecoration(
+                                              color: Colors.grey[300],
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
                                             ),
                                           ),
                                         ),
                                       ),
-                            ),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
+                                      const SizedBox(height: 10),
 
-      // ── Bottom nav ──
-      bottomNavigationBar: BottomNavigationBar(
-        selectedItemColor: Colors.red,
-        unselectedItemColor: Colors.black,
-        currentIndex: _selectedIndex,
-        onTap: (index) {
-          setState(() => _selectedIndex = index);
-          switch (index) {
-            case 0:
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => DashboardScreen()),
-              );
-              break;
-            case 1:
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => MapScreen()),
-              );
-              break;
-            case 2:
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => OBD2Page()),
-              );
-              break;
-            case 3:
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => ServiceHistorypage()),
-              );
-              break;
-            case 4:
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => ProfileScreen()),
-              );
-              break;
-          }
-        },
-        items: [
-          const BottomNavigationBarItem(icon: Icon(Icons.home), label: ''),
-          const BottomNavigationBarItem(icon: Icon(Icons.map), label: ''),
-          BottomNavigationBarItem(
-            icon: Image.asset('images/logo.png', height: 30),
-            label: '',
-          ),
-          const BottomNavigationBarItem(icon: Icon(Icons.history), label: ''),
-          const BottomNavigationBarItem(icon: Icon(Icons.person), label: ''),
-        ],
-      ),
+                                      // Photo
+                                      if (_selectedPlace!['photo_ref'] != null)
+                                        ClipRRect(
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                          child: Image.network(
+                                            'https://maps.googleapis.com/maps/api/place/photo'
+                                            '?maxwidth=600&photo_reference=${_selectedPlace!['photo_ref']}'
+                                            '&key=$_googleApiKey',
+                                            height: 150,
+                                            width: double.infinity,
+                                            fit: BoxFit.cover,
+                                            errorBuilder:
+                                                (_, __, ___) =>
+                                                    const SizedBox(),
+                                          ),
+                                        ),
+                                      const SizedBox(height: 10),
+
+                                      // Name
+                                      Text(
+                                        _selectedPlace!['name'],
+                                        style: const TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+
+                                      // Rating
+                                      Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.star,
+                                            color: Colors.amber,
+                                            size: 16,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            '${_selectedPlace!['rating']}  ·  ${_selectedPlace!['total_ratings']} ${AppStrings.get('reviews', lang)}',
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 2,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color:
+                                                  _selectedPlace!['open_now'] ==
+                                                          true
+                                                      ? Colors.green[50]
+                                                      : Colors.red[50],
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                            ),
+                                            child: Text(
+                                              _selectedPlace!['open_now'] ==
+                                                      true
+                                                  ? AppStrings.get('open', lang)
+                                                  : AppStrings.get(
+                                                    'closed',
+                                                    lang,
+                                                  ),
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.bold,
+                                                color:
+                                                    _selectedPlace!['open_now'] ==
+                                                            true
+                                                        ? Colors.green[700]
+                                                        : Colors.red[700],
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+
+                                      // Address
+                                      if ((_selectedPlace!['address'] ?? '')
+                                          .isNotEmpty)
+                                        Row(
+                                          children: [
+                                            const Icon(
+                                              Icons.location_on,
+                                              size: 13,
+                                              color: Colors.red,
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Expanded(
+                                              child: Text(
+                                                _selectedPlace!['address'],
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.grey[700],
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      const SizedBox(height: 12),
+
+                                      // Action buttons
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceEvenly,
+                                        children: [
+                                          _actionBtn(
+                                            Icons.directions,
+                                            AppStrings.get('directions', lang),
+                                            Colors.blue,
+                                            () {
+                                              _getRoute(
+                                                _selectedPlace!['lat'],
+                                                _selectedPlace!['lng'],
+                                              );
+                                            },
+                                          ),
+                                          _actionBtn(
+                                            Icons.open_in_new,
+                                            AppStrings.get('open_maps', lang),
+                                            Colors.green,
+                                            () {
+                                              _openInGoogleMaps(
+                                                _selectedPlace!['lat'],
+                                                _selectedPlace!['lng'],
+                                              );
+                                            },
+                                          ),
+                                          if ((_selectedPlace!['phone'] ?? '')
+                                              .isNotEmpty)
+                                            _actionBtn(
+                                              Icons.phone,
+                                              AppStrings.get('call', lang),
+                                              Colors.teal,
+                                              () {
+                                                _makePhoneCall(
+                                                  _selectedPlace!['phone'],
+                                                );
+                                              },
+                                            ),
+                                          if ((_selectedPlace!['website'] ?? '')
+                                              .isNotEmpty)
+                                            _actionBtn(
+                                              Icons.language,
+                                              AppStrings.get('website', lang),
+                                              Colors.indigo,
+                                              () {
+                                                _openWebsite(
+                                                  _selectedPlace!['website'],
+                                                );
+                                              },
+                                            ),
+                                          _actionBtn(
+                                            Icons.share,
+                                            AppStrings.get('share', lang),
+                                            Colors.orange,
+                                            () {
+                                              Share.share(
+                                                '${_selectedPlace!['name']}\n${_selectedPlace!['address']}\n'
+                                                'https://www.google.com/maps/search/?api=1'
+                                                '&query=${_selectedPlace!['lat']},${_selectedPlace!['lng']}',
+                                              );
+                                            },
+                                          ),
+                                          _actionBtn(
+                                            _showReviews
+                                                ? Icons.expand_less
+                                                : Icons.reviews,
+                                            AppStrings.get('reviews', lang),
+                                            Colors.purple,
+                                            () {
+                                              setState(
+                                                () =>
+                                                    _showReviews =
+                                                        !_showReviews,
+                                              );
+                                            },
+                                          ),
+                                          _actionBtn(
+                                            Icons.close,
+                                            AppStrings.get('close', lang),
+                                            Colors.grey,
+                                            () {
+                                              setState(() {
+                                                _selectedPlace = null;
+                                                _showReviews = false;
+                                              });
+                                            },
+                                          ),
+                                        ],
+                                      ),
+
+                                      // Opening hours
+                                      if ((_selectedPlace!['hours'] as List)
+                                          .isNotEmpty) ...[
+                                        const SizedBox(height: 12),
+                                        Text(
+                                          AppStrings.get('opening_hours', lang),
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        ...(_selectedPlace!['hours'] as List)
+                                            .map(
+                                              (h) => Padding(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      vertical: 1,
+                                                    ),
+                                                child: Text(
+                                                  h.toString(),
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: Colors.grey[700],
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                      ],
+                                      const SizedBox(height: 8),
+                                    ],
+                                  ),
+                                ),
+                              ),
+
+                              // Reviews panel
+                              if (_showReviews)
+                                Container(
+                                  constraints: BoxConstraints(
+                                    maxHeight:
+                                        MediaQuery.of(context).size.height *
+                                        0.32,
+                                  ),
+                                  color: Colors.white,
+                                  child:
+                                      _reviews.isNotEmpty
+                                          ? ListView.builder(
+                                            padding: const EdgeInsets.fromLTRB(
+                                              16,
+                                              8,
+                                              16,
+                                              16,
+                                            ),
+                                            itemCount: _reviews.length,
+                                            itemBuilder:
+                                                (_, i) =>
+                                                    _reviewCard(_reviews[i]),
+                                          )
+                                          : Center(
+                                            child: Padding(
+                                              padding: const EdgeInsets.all(16),
+                                              child: Text(
+                                                AppStrings.get(
+                                                  'no_reviews',
+                                                  lang,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+
+          bottomNavigationBar: AppBottomNav(currentIndex: 1),
+        );
+      },
     );
   }
 
@@ -1302,10 +1293,10 @@ class _MapScreenState extends State<MapScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surfaceGlass,
             borderRadius: BorderRadius.circular(20),
             boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
-            border: Border.all(color: color.withOpacity(0.3)),
+            border: Border.all(color: AppColors.gold.withOpacity(0.4)),
           ),
           child: Text(
             label,
@@ -1324,11 +1315,12 @@ class _MapScreenState extends State<MapScreen> {
       width: 38,
       height: 38,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surfaceDark,
         shape: BoxShape.circle,
+        border: Border.all(color: AppColors.borderGold),
         boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
       ),
-      child: Icon(icon, size: 20, color: Colors.black87),
+      child: Icon(icon, size: 20, color: AppColors.gold),
     ),
   );
 

@@ -8,6 +8,11 @@ import 'package:http/http.dart' as http;
 import 'records_screen.dart';
 import 'package:dr_cars_fyp/appointments/appointments_screen.dart';
 import 'add_vehicle.dart';
+import 'package:dr_cars_fyp/l10n/app_strings.dart';
+import 'package:dr_cars_fyp/providers/locale_provider.dart';
+import 'package:dr_cars_fyp/settings/settings.dart';
+import 'package:dr_cars_fyp/theme/app_theme.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -67,184 +72,240 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        automaticallyImplyLeading: false,
-        title: FutureBuilder<Map<String, dynamic>>(
-          future: _loadHeaderData(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Text(
-                "Loading...",
-                style: TextStyle(color: Colors.white),
-              );
-            }
-            if (!snapshot.hasData) {
-              return const Text(
-                "Welcome",
-                style: TextStyle(color: Colors.white),
-              );
-            }
+    return ValueListenableBuilder<String>(
+      valueListenable: localeNotifier,
+      builder: (context, lang, _) {
+        return Scaffold(
+          backgroundColor: AppColors.richBlack,
+          appBar: AppBar(
+            backgroundColor: AppColors.obsidian,
+            automaticallyImplyLeading: false,
+            title: FutureBuilder<Map<String, dynamic>>(
+              future: _loadHeaderData(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Text(
+                    AppStrings.get('loading', lang),
+                    style: const TextStyle(color: Colors.white),
+                  );
+                }
+                if (!snapshot.hasData) {
+                  return Text(
+                    AppStrings.get('welcome_back', lang),
+                    style: const TextStyle(color: Colors.white),
+                  );
+                }
 
-            final data = snapshot.data!;
-            final name = data['name']?.toString() ?? 'Service Center';
-            final count = (data['count'] as num?)?.toInt() ?? 0;
+                final data = snapshot.data!;
+                final name = data['name']?.toString() ?? 'Service Center';
+                final count = (data['count'] as num?)?.toInt() ?? 0;
 
-            return Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    ClipOval(
-                      child: Image.asset(
-                        'images/logo.png',
-                        width: 40,
-                        height: 40,
-                        fit: BoxFit.cover,
-                      ),
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.settings, color: Colors.white),
+                          tooltip: AppStrings.get('settings', lang),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => SettingsScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        ClipOval(
+                          child: Image.asset(
+                            'images/logo.png',
+                            width: 40,
+                            height: 40,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          '${AppStrings.get('welcome_back', lang)} $name',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 12),
-                    Text(
-                      "Welcome $name - Service Center",
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Stack(
+                      children: [
+                        IconButton(
+                          icon: const Icon(
+                            Icons.receipt_long,
+                            color: Colors.white,
+                          ),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const ServiceReceiptsPage(),
+                              ),
+                            );
+                          },
+                        ),
+                        if (count > 0)
+                          Positioned(
+                            right: 6,
+                            top: 6,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                              constraints: const BoxConstraints(
+                                minWidth: 20,
+                                minHeight: 20,
+                              ),
+                              child: Text(
+                                '$count',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ],
-                ),
-                Stack(
+                );
+              },
+            ),
+          ),
+          body: SingleChildScrollView(
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    IconButton(
-                      icon: const Icon(Icons.receipt_long, color: Colors.white),
+                    const SizedBox(height: 50),
+                    Container(
+                      width: 160,
+                      height: 160,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.gold.withOpacity(0.3),
+                            blurRadius: 30,
+                            spreadRadius: 5,
+                          ),
+                        ],
+                      ),
+                      padding: const EdgeInsets.all(16),
+                      child: Image.asset(
+                        'images/bg_removed_logo.png',
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                    const SizedBox(height: 50),
+                    _buildMenuButton(
+                      context,
+                      text: AppStrings.get('add_new', lang),
+                      subtext: AppStrings.get('add_new_sub', lang),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => AddVehicle()),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                    _buildMenuButton(
+                      context,
+                      text: AppStrings.get('records', lang),
+                      subtext: AppStrings.get('records_sub', lang),
+                      onPressed: () async {
+                        bool isAuthenticated = await showDialog(
+                          context: context,
+                          builder: (context) => PasswordDialog(),
+                        );
+                        if (isAuthenticated) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => RecordsScreen(),
+                            ),
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text("Wrong password")),
+                          );
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                    _buildMenuButton(
+                      context,
+                      text: AppStrings.get('appointments', lang),
+                      subtext: AppStrings.get('appointments_sub', lang),
                       onPressed: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => const ServiceReceiptsPage(),
+                            builder: (context) => AppointmentsScreen(),
                           ),
                         );
                       },
                     ),
-                    if (count > 0)
-                      Positioned(
-                        right: 6,
-                        top: 6,
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: const BoxDecoration(
-                            color: Colors.red,
-                            shape: BoxShape.circle,
+                    const SizedBox(height: 100),
+                    ElevatedButton(
+                      onPressed: () async {
+                        await _authService.logout();
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => SignInScreen(),
                           ),
-                          constraints: const BoxConstraints(
-                            minWidth: 20,
-                            minHeight: 20,
-                          ),
-                          child: Text(
-                            '$count',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            textAlign: TextAlign.center,
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        foregroundColor: AppColors.error,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 32,
+                          vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          side: const BorderSide(
+                            color: AppColors.error,
+                            width: 1,
                           ),
                         ),
                       ),
+                      child: Text(
+                        AppStrings.get('sign_out', lang),
+                        style: GoogleFonts.jost(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 1.2,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
-              ],
-            );
-          },
-        ),
-      ),
-      body: SingleChildScrollView(
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                SizedBox(height: 50),
-                SizedBox(
-                  width: double.infinity,
-                  child: Image.asset('images/bg_removed_logo.png', height: 150),
-                ),
-                const SizedBox(height: 50),
-                _buildMenuButton(
-                  context,
-                  text: "Add New",
-                  subtext: "Add new vehicles and add services",
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => AddVehicle()),
-                    );
-                  },
-                ),
-                const SizedBox(height: 24),
-                _buildMenuButton(
-                  context,
-                  text: "Records",
-                  subtext: "For quick view of services (For non users)",
-                  onPressed: () async {
-                    bool isAuthenticated = await showDialog(
-                      context: context,
-                      builder: (context) => PasswordDialog(),
-                    );
-                    if (isAuthenticated) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => RecordsScreen(),
-                        ),
-                      );
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Wrong password")),
-                      );
-                    }
-                  },
-                ),
-                const SizedBox(height: 24),
-                _buildMenuButton(
-                  context,
-                  text: "Appointments",
-                  subtext: "Accept service appointments",
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => AppointmentsScreen(),
-                      ),
-                    );
-                  },
-                ),
-                SizedBox(height: 100),
-                ElevatedButton(
-                  onPressed: () async {
-                    await _authService.logout();
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => SignInScreen()),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  ),
-                  child: Text(
-                    "Sign Out",
-                    style: TextStyle(fontSize: 18, color: Colors.white),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -254,26 +315,48 @@ class _HomeScreenState extends State<HomeScreen> {
     required String subtext,
     required VoidCallback onPressed,
   }) {
-    return SizedBox(
-      width: 300,
-      height: 90,
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.black,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-        onPressed: onPressed,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              text,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        width: double.infinity,
+        height: 90,
+        decoration: BoxDecoration(
+          color: AppColors.surfaceDark,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.borderGold),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.gold.withOpacity(0.08),
+              blurRadius: 20,
+              offset: const Offset(0, 4),
             ),
-            Text(subtext, style: const TextStyle(fontSize: 12)),
           ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                text,
+                style: GoogleFonts.cormorantGaramond(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subtext,
+                style: GoogleFonts.jost(
+                  fontSize: 11,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -370,6 +370,11 @@ import 'package:dr_cars_fyp/user/user_profile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:dr_cars_fyp/l10n/app_strings.dart';
+import 'package:dr_cars_fyp/providers/locale_provider.dart';
+import 'package:dr_cars_fyp/theme/app_theme.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:dr_cars_fyp/widgets/app_bottom_nav.dart';
 
 void main() => runApp(MyApp());
 
@@ -437,7 +442,7 @@ class _OBD2PageState extends State<OBD2Page> {
   Future<void> _requestBluetoothAndLoad() async {
     await Permission.bluetoothConnect.request();
     await Permission.bluetoothScan.request();
-    loadDevices(); 
+    loadDevices();
   }
 
   void loadDevices() async {
@@ -527,258 +532,263 @@ class _OBD2PageState extends State<OBD2Page> {
   }
 
   Widget _liveDataCard(String label, String value) {
-    return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Container(
-        width: 80,
-        height: 100,
-        padding: EdgeInsets.all(8),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            AnimatedSwitcher(
-              duration: Duration(milliseconds: 300),
-              transitionBuilder: (child, animation) {
-                return FadeTransition(opacity: animation, child: child);
-              },
-              child: Text(
-                value,
-                key: ValueKey(value), // Important for triggering animation
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+    return Container(
+      width: 100,
+      height: 110,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceDark,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.borderGold),
+        boxShadow: [
+          BoxShadow(color: AppColors.gold.withOpacity(0.06), blurRadius: 10),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            transitionBuilder:
+                (child, animation) =>
+                    FadeTransition(opacity: animation, child: child),
+            child: Text(
+              value,
+              key: ValueKey(value),
+              style: GoogleFonts.cormorantGaramond(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: AppColors.gold,
               ),
             ),
-            SizedBox(height: 6),
-            Text(label, style: TextStyle(fontSize: 12)),
-          ],
-        ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: GoogleFonts.jost(
+              fontSize: 11,
+              color: AppColors.textSecondary,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: const Color.fromARGB(255, 0, 48, 144),
-        title: Text(
-          'OBD2 Diagnostics',
-          style: TextStyle(
-            fontSize: 25,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        actions: [
-          // if (_dtcs.isNotEmpty && _isConnected)
-          //   IconButton(
-          //     icon: Icon(Icons.delete_forever),
-          //     tooltip: "Clear Trouble Codes",
-          //     onPressed: _clearTroubleCodes,`
-          //   ),`
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Card(
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(15),
+    return ValueListenableBuilder<String>(
+      valueListenable: localeNotifier,
+      builder: (context, lang, _) {
+        return Scaffold(
+          appBar: AppBar(
+            backgroundColor: AppColors.obsidian,
+            title: Text(
+              AppStrings.get('obd2_diagnostics', lang),
+              style: const TextStyle(
+                fontSize: 25,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            ),
+          ),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                // Bluetooth connection card
+                Card(
+                  elevation: 4,
+                  color: AppColors.surfaceDark,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                    side: const BorderSide(color: AppColors.borderGold),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
                       children: [
                         Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Icon(
-                              _isConnected
-                                  ? Icons.bluetooth_connected
-                                  : Icons.bluetooth_disabled,
-                              color: _isConnected ? Colors.green : Colors.red,
+                            Row(
+                              children: [
+                                Icon(
+                                  _isConnected
+                                      ? Icons.bluetooth_connected
+                                      : Icons.bluetooth_disabled,
+                                  color:
+                                      _isConnected ? Colors.green : Colors.red,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  _isConnected
+                                      ? AppStrings.get('connected', lang)
+                                      : AppStrings.get('disconnected', lang),
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color:
+                                        _isConnected
+                                            ? Colors.green
+                                            : Colors.red,
+                                  ),
+                                ),
+                              ],
                             ),
-                            SizedBox(width: 8),
-                            Text(
-                              _isConnected ? 'Connected' : 'Disconnected',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: _isConnected ? Colors.green : Colors.red,
+                            ElevatedButton(
+                              onPressed:
+                                  _isConnected
+                                      ? _disconnectOBD2
+                                      : _connectToOBD2,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor:
+                                    _isConnected ? Colors.red : Colors.green,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                              ),
+                              child: Text(
+                                _isConnected
+                                    ? AppStrings.get('disconnect', lang)
+                                    : AppStrings.get('connect', lang),
                               ),
                             ),
                           ],
                         ),
-                        ElevatedButton(
-                          onPressed:
-                              _isConnected ? _disconnectOBD2 : _connectToOBD2,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                _isConnected ? Colors.red : Colors.green,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
-                            ),
+                        if (connectionStatus.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Text(connectionStatus),
+                        ],
+                        if (!_isConnected) ...[
+                          const SizedBox(height: 10),
+                          DropdownButton<BluetoothDevice>(
+                            hint: Text(AppStrings.get('select_device', lang)),
+                            value: selectedDevice,
+                            isExpanded: true,
+                            onChanged: (BluetoothDevice? value) {
+                              setState(() => selectedDevice = value);
+                            },
+                            items:
+                                devices
+                                    .map(
+                                      (device) => DropdownMenuItem(
+                                        value: device,
+                                        child: Text(
+                                          device.name ?? device.address,
+                                        ),
+                                      ),
+                                    )
+                                    .toList(),
                           ),
-                          child: Text(_isConnected ? 'Disconnect' : 'Connect'),
-                        ),
+                        ],
                       ],
                     ),
-                    if (connectionStatus.isNotEmpty) ...[
-                      SizedBox(height: 8),
-                      Text(connectionStatus),
-                    ],
-                    if (!_isConnected) ...[
-                      SizedBox(height: 10),
-                      DropdownButton<BluetoothDevice>(
-                        hint: const Text("Select Device"),
-                        value: selectedDevice,
-                        isExpanded: true,
-                        onChanged: (BluetoothDevice? value) {
-                          setState(() {
-                            selectedDevice = value;
-                          });
-                        },
-                        items:
-                            devices
-                                .map(
-                                  (device) => DropdownMenuItem(
-                                    value: device,
-                                    child: Text(device.name ?? device.address),
-                                  ),
-                                )
-                                .toList(),
-                      ),
-                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Vehicle dropdown
+                DropdownButtonFormField<String>(
+                  value: _selectedVehicle,
+                  decoration: InputDecoration(
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    filled: true,
+                    fillColor: Colors.grey[100],
+                    hintText: AppStrings.get('select_vehicle', lang),
+                  ),
+                  items:
+                      _vehicles
+                          .map(
+                            (v) => DropdownMenuItem(value: v, child: Text(v)),
+                          )
+                          .toList(),
+                  onChanged:
+                      (value) => setState(() => _selectedVehicle = value),
+                ),
+                const SizedBox(height: 20),
+
+                // Live data cards
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _liveDataCard('RPM', _rpm?.toStringAsFixed(0) ?? '--'),
+                    _liveDataCard(
+                      'Coolant Temp',
+                      _coolantTemp != null
+                          ? '${_coolantTemp!.toStringAsFixed(1)}°C'
+                          : '--',
+                    ),
+                    _liveDataCard(
+                      'Speed',
+                      _speed != null
+                          ? '${_speed!.toStringAsFixed(0)} km/h'
+                          : '--',
+                    ),
                   ],
                 ),
-              ),
-            ),
-            SizedBox(height: 20),
-            DropdownButtonFormField<String>(
-              value: _selectedVehicle,
-              decoration: InputDecoration(
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                filled: true,
-                fillColor: Colors.grey[100],
-                hintText: 'Select Vehicle',
-              ),
-              items:
-                  _vehicles
-                      .map((v) => DropdownMenuItem(value: v, child: Text(v)))
-                      .toList(),
-              onChanged: (value) => setState(() => _selectedVehicle = value),
-            ),
-            SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _liveDataCard('RPM', _rpm?.toStringAsFixed(0) ?? '--'),
-                _liveDataCard(
-                  'Coolant Temp',
-                  _coolantTemp != null
-                      ? '${_coolantTemp!.toStringAsFixed(1)}°C'
-                      : '--',
-                ),
-                _liveDataCard(
-                  'Speed',
-                  _speed != null ? '${_speed!.toStringAsFixed(0)} km/h' : '--',
+                const SizedBox(height: 20),
+
+                // Trouble codes
+                if (_dtcs.isNotEmpty)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children:
+                        _dtcs
+                            .map(
+                              (entry) => ListTile(
+                                title: Text("Code: ${entry['code']}"),
+                                subtitle: Text(
+                                  "Description: ${entry['description']}",
+                                ),
+                              ),
+                            )
+                            .toList(),
+                  )
+                else
+                  Text(AppStrings.get('no_trouble_codes', lang)),
+
+                const SizedBox(height: 20),
+
+                // Reset button
+                ElevatedButton.icon(
+                  onPressed:
+                      _isConnected
+                          ? () async {
+                            await btService.clearDTCs();
+                            setState(() => _dtcs.clear());
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Trouble codes cleared successfully.',
+                                ),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          }
+                          : null,
+                  icon: const Icon(Icons.restart_alt),
+                  label: Text(AppStrings.get('reset_trouble_codes', lang)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.redAccent,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
+                    textStyle: const TextStyle(fontSize: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
                 ),
               ],
             ),
-            SizedBox(height: 20),
-            if (_dtcs.isNotEmpty)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children:
-                    _dtcs
-                        .map(
-                          (entry) => ListTile(
-                            title: Text("Code: ${entry['code']}"),
-                            subtitle: Text(
-                              "Description: ${entry['description']}",
-                            ),
-                          ),
-                        )
-                        .toList(),
-              )
-            else
-              Text("No trouble codes detected"),
-            SizedBox(height: 20),
-            ElevatedButton.icon(
-              onPressed:
-                  _isConnected
-                      ? () async {
-                        await btService.clearDTCs(); // ✅ fixed line
-                        setState(() {
-                          _dtcs.clear();
-                        });
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Trouble codes cleared successfully.',
-                            ),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-                      }
-                      : null,
-              icon: Icon(Icons.restart_alt),
-              label: Text("Reset Trouble Codes"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.redAccent,
-                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                textStyle: TextStyle(fontSize: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        selectedItemColor: Colors.red,
-        unselectedItemColor: Colors.black,
-        currentIndex: _selectedIndex,
-        onTap: (index) {
-          setState(() => _selectedIndex = index);
-          if (index == 0)
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => DashboardScreen()),
-            );
-          else if (index == 1)
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => MapScreen()),
-            );
-          else if (index == 3)
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => ServiceHistorypage()),
-            );
-          else if (index == 4)
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => ProfileScreen()),
-            );
-        },
-        items: [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.map), label: ''),
-          BottomNavigationBarItem(
-            icon: Image.asset('images/logo.png', height: 30),
-            label: '',
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.history), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: ''),
-        ],
-      ),
+          bottomNavigationBar: AppBottomNav(currentIndex: 2),
+        );
+      },
     );
   }
 }

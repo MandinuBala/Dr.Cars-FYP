@@ -10,6 +10,11 @@ import 'package:dr_cars_fyp/obd/OBD2.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dr_cars_fyp/utils/vehicle_image_helper.dart';
+import 'package:dr_cars_fyp/l10n/app_strings.dart';
+import 'package:dr_cars_fyp/providers/locale_provider.dart';
+import 'package:dr_cars_fyp/theme/app_theme.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:dr_cars_fyp/widgets/app_bottom_nav.dart';
 
 int _selectedIndex = 4;
 
@@ -49,6 +54,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       'Vitz',
       'Prius',
       'Crown',
+      'Fortuner',
     ],
     'Nissan': [
       'Sunny',
@@ -212,55 +218,60 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.home, color: Colors.black),
-          onPressed: () => _navigateToDashboard(context),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.refresh, color: Colors.black),
-            onPressed: _loadUserData,
-          ),
-          IconButton(
-            icon: Icon(Icons.settings, color: Colors.black),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => SettingsScreen()),
-              );
-            },
-          ),
-        ],
-      ),
-      body: Stack(
-        children: [
-          SingleChildScrollView(
-            padding: EdgeInsets.all(16),
-            child:
-                _isInitialSetup
-                    ? _buildInitialSetupForm()
-                    : _buildVehiclePanel(),
-          ),
-          if (_isLoading)
-            Container(
-              color: Colors.black.withOpacity(0.5),
-              child: Center(
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              ),
+    return ValueListenableBuilder<String>(
+      valueListenable: localeNotifier,
+      builder: (context, lang, _) {
+        return Scaffold(
+          appBar: AppBar(
+            backgroundColor: AppColors.obsidian,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.home, color: AppColors.gold),
+              onPressed: () => _navigateToDashboard(context),
             ),
-        ],
-      ),
-      bottomNavigationBar: _buildBottomNavBar(),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.refresh, color: AppColors.gold),
+                onPressed: _loadUserData,
+              ),
+              IconButton(
+                icon: const Icon(Icons.settings, color: AppColors.gold),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => SettingsScreen()),
+                  );
+                },
+              ),
+            ],
+          ),
+          body: Stack(
+            children: [
+              SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child:
+                    _isInitialSetup
+                        ? _buildInitialSetupForm(lang)
+                        : _buildVehiclePanel(lang),
+              ),
+              if (_isLoading)
+                Container(
+                  color: Colors.black.withOpacity(0.5),
+                  child: const Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          bottomNavigationBar: _buildBottomNavBar(),
+        );
+      },
     );
   }
 
-  Widget _buildVehiclePanel() {
+  Widget _buildVehiclePanel(String lang) {
     return Column(
       children: [
         Card(
@@ -293,10 +304,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           _isInitialSetup = true;
                         });
                       },
-                      child: Text('Edit Vehicle Information'),
+                      child: Text(AppStrings.get('edit_vehicle', lang)),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        minimumSize: Size(double.infinity, 40),
+                        backgroundColor: AppColors.gold,
+                        foregroundColor: AppColors.obsidian,
+                        minimumSize: const Size(double.infinity, 40),
                       ),
                     ),
                   ],
@@ -317,9 +329,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         children: [
           Text(
             label,
-            style: TextStyle(
+            style: const TextStyle(
               fontWeight: FontWeight.w500,
-              color: Colors.grey[600],
+              color: AppColors.textSecondary,
             ),
           ),
           Text(value, style: TextStyle(fontWeight: FontWeight.w600)),
@@ -328,7 +340,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildInitialSetupForm() {
+  Widget _buildInitialSetupForm(String lang) {
     return Form(
       key: _formKey,
       child: Column(
@@ -341,7 +353,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               height: 150,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.grey, width: 2),
+                border: Border.all(color: AppColors.gold, width: 2),
               ),
               child:
                   _vehiclePhotoUrl != null
@@ -379,13 +391,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           SizedBox(height: 10),
           Text(
-            'Vehicle Information Setup',
+            AppStrings.get('vehicle_information_setup', lang),
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           SizedBox(height: 20),
-          _buildBrandDropdown(),
-          _buildModelDropdown(),
-          _buildTypeDropdown(),
+          _buildBrandDropdown(lang),
+          _buildModelDropdown(lang),
+          _buildTypeDropdown(lang),
           SizedBox(height: 20),
           _buildTextField(
             controller: vehicleNumberController,
@@ -405,13 +417,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
           SizedBox(height: 20),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.black,
-              minimumSize: Size(double.infinity, 50),
+              backgroundColor: AppColors.gold,
+              foregroundColor: AppColors.obsidian,
+              minimumSize: const Size(double.infinity, 50),
             ),
             onPressed: _isLoading ? null : () => _saveProfile(),
             child: Text(
-              "Save Vehicle Information",
-              style: TextStyle(color: Colors.white),
+              AppStrings.get('save_vehicle', lang),
+              style: GoogleFonts.jost(
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
+                letterSpacing: 1.5,
+                color: AppColors.obsidian,
+              ),
             ),
           ),
         ],
@@ -420,54 +438,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildBottomNavBar() {
-    return BottomNavigationBar(
-      type: BottomNavigationBarType.fixed,
-      selectedItemColor: Colors.red,
-      unselectedItemColor: Colors.black,
-      currentIndex: _selectedIndex,
-      onTap: (index) {
-        setState(() {
-          _selectedIndex = index;
-        });
-
-        if (index == 0) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => DashboardScreen()),
-          );
-        } else if (index == 1) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => MapScreen()),
-          );
-        } else if (index == 2) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => OBD2Page()),
-          );
-        } else if (index == 3) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => ServiceHistorypage()),
-          );
-        } else if (index == 4) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => ProfileScreen()),
-          );
-        }
-      },
-      items: [
-        BottomNavigationBarItem(icon: Icon(Icons.home), label: ''),
-        BottomNavigationBarItem(icon: Icon(Icons.map), label: ''),
-        BottomNavigationBarItem(
-          icon: Image.asset('images/logo.png', height: 30),
-          label: '',
-        ),
-        BottomNavigationBarItem(icon: Icon(Icons.history), label: ''),
-        BottomNavigationBarItem(icon: Icon(Icons.person), label: ''),
-      ],
-    );
+    return AppBottomNav(currentIndex: 4);
   }
 
   Future<void> _saveProfile() async {
@@ -574,7 +545,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildBrandDropdown() {
+  Widget _buildBrandDropdown(String lang) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: DropdownButtonFormField<String>(
@@ -595,12 +566,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
             selectedModel = null;
           });
         },
-        hint: Text("Select a brand"),
+        hint: Text(AppStrings.get('select_brand', lang)),
       ),
     );
   }
 
-  Widget _buildModelDropdown() {
+  Widget _buildModelDropdown(String lang) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: DropdownButtonFormField<String>(
@@ -624,13 +595,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
           });
         },
         hint: Text(
-          selectedBrand == null ? "Select brand first" : "Select model",
+          selectedBrand == null
+              ? AppStrings.get('select_brand_first', lang)
+              : AppStrings.get('select_model', lang),
         ),
       ),
     );
   }
 
-  Widget _buildTypeDropdown() {
+  Widget _buildTypeDropdown(String lang) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: DropdownButtonFormField<String>(
@@ -648,7 +621,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             selectedType = value;
           });
         },
-        hint: Text("Select vehicle type"),
+        hint: Text(AppStrings.get('select_type', lang)),
       ),
     );
   }

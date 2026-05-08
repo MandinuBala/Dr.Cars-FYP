@@ -1,5 +1,8 @@
+// lib/service/owner_info.dart
 import 'package:flutter/material.dart';
 import 'package:dr_cars_fyp/auth/auth_service.dart';
+import 'package:dr_cars_fyp/theme/app_theme.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'add_service.dart';
 
 class OwnerInfo extends StatefulWidget {
@@ -122,7 +125,6 @@ class _OwnerInfoPageState extends State<OwnerInfo> {
       _populateFields(widget.vehicleData!);
       _fetchUserData();
     }
-
     if (widget.userData != null) {
       _userDetails(widget.userData!);
     }
@@ -130,13 +132,20 @@ class _OwnerInfoPageState extends State<OwnerInfo> {
 
   Future<void> _fetchVehicleData() async {
     final vehicle = await _authService.getVehicleByNumber(widget.vehicleNumber);
-
     if (vehicle != null) {
       _populateFields(vehicle);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Vehicle not found in database.")),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AppColors.error,
+            content: Text(
+              'Vehicle not found in database.',
+              style: GoogleFonts.jost(color: Colors.white),
+            ),
+          ),
+        );
+      }
     }
   }
 
@@ -153,30 +162,35 @@ class _OwnerInfoPageState extends State<OwnerInfo> {
 
   Future<void> _fetchUserData() async {
     if (userIdController.text.isEmpty) return;
-
     final userDoc = await _authService.getUserById(userIdController.text);
-
     if (userDoc != null) {
       _userDetails(userDoc);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("User not found in database.")),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AppColors.error,
+            content: Text(
+              'User not found in database.',
+              style: GoogleFonts.jost(color: Colors.white),
+            ),
+          ),
+        );
+      }
     }
   }
 
   void _userDetails(Map<String, dynamic> data) {
     setState(() {
-      nameController.text = data['Name'] ?? data['name'] ?? "";
-      addressController.text = data['Address'] ?? data['address'] ?? "";
-      contactController.text = data['Contact'] ?? data['contact'] ?? "";
-      emailController.text = data['Email'] ?? data['email'] ?? "";
+      nameController.text = data['Name'] ?? data['name'] ?? '';
+      addressController.text = data['Address'] ?? data['address'] ?? '';
+      contactController.text = data['Contact'] ?? data['contact'] ?? '';
+      emailController.text = data['Email'] ?? data['email'] ?? '';
     });
   }
 
   Future<void> _handleContinue() async {
     if (!_formKey.currentState!.validate()) return;
-
     setState(() => isLoading = true);
 
     final isVehicleExisting = widget.vehicleData != null;
@@ -206,7 +220,6 @@ class _OwnerInfoPageState extends State<OwnerInfo> {
           widget.vehicleData?['uid']?.toString() ??
           widget.vehicleData?['userId']?.toString() ??
           '';
-
       if (uid.isNotEmpty) {
         await _authService.updateUserById(uid, userData);
         await _authService.upsertVehicleByUserId(uid, vehicleData);
@@ -245,118 +258,49 @@ class _OwnerInfoPageState extends State<OwnerInfo> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          "Vehicle: ${widget.vehicleNumber}",
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-            color: Colors.black,
-          ),
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.white,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              const SizedBox(height: 20),
-              const CircleAvatar(
-                radius: 50,
-                backgroundImage: AssetImage('images/logo.png'),
-              ),
-              const SizedBox(height: 20),
-              _buildTextField(nameController, "Name"),
-              _buildTextField(addressController, "Address"),
-              _buildTextField(contactController, "Contact"),
-              _buildTextField(emailController, "Email", isEmail: true),
-              _buildTextField(vehicleYearController, "Vehicle Year"),
-
-              _buildDropdownField(
-                "Brand",
-                vehicleModels.keys.toList(),
-                selectedBrand,
-                (value) {
-                  setState(() {
-                    selectedBrand = value;
-                    selectedModel = vehicleModels[selectedBrand]?.first;
-                  });
-                },
-              ),
-
-              if (selectedBrand != null)
-                _buildDropdownField(
-                  "Model",
-                  vehicleModels[selectedBrand] ?? [],
-                  selectedModel,
-                  (value) {
-                    setState(() {
-                      selectedModel = value;
-                    });
-                  },
-                ),
-
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(5),
-                    ),
-                  ),
-                  onPressed: _handleContinue,
-                  child:
-                      isLoading
-                          ? const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                          : const Text(
-                            "Continue",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                ),
-              ),
-              const SizedBox(height: 20),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
+  // ── Luxury text field ─────────────────────────────────────────────────────
   Widget _buildTextField(
     TextEditingController controller,
     String label, {
     bool isEmail = false,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 15),
+      padding: const EdgeInsets.only(bottom: 16),
       child: TextFormField(
         controller: controller,
+        style: GoogleFonts.jost(color: AppColors.textPrimary, fontSize: 14),
         decoration: InputDecoration(
           labelText: label,
-          hintText: "Enter $label",
-          border: const OutlineInputBorder(),
+          labelStyle: GoogleFonts.jost(
+            color: AppColors.textSecondary,
+            fontSize: 13,
+          ),
+          floatingLabelStyle: GoogleFonts.jost(
+            color: AppColors.gold,
+            fontSize: 12,
+          ),
+          filled: true,
+          fillColor: AppColors.surfaceElevated,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.borderGold),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.borderGold),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.gold, width: 1.5),
+          ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.error),
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
         ),
         validator: (value) {
           if (value == null || value.trim().isEmpty) {
@@ -371,6 +315,7 @@ class _OwnerInfoPageState extends State<OwnerInfo> {
     );
   }
 
+  // ── Luxury dropdown ───────────────────────────────────────────────────────
   Widget _buildDropdownField(
     String label,
     List<String> items,
@@ -378,19 +323,223 @@ class _OwnerInfoPageState extends State<OwnerInfo> {
     Function(String?) onChanged,
   ) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 15),
+      padding: const EdgeInsets.only(bottom: 16),
       child: DropdownButtonFormField<String>(
+        value: items.contains(selectedValue) ? selectedValue : null,
+        style: GoogleFonts.jost(color: AppColors.textPrimary, fontSize: 14),
+        dropdownColor: AppColors.surfaceElevated,
+        icon: const Icon(
+          Icons.keyboard_arrow_down_rounded,
+          color: AppColors.gold,
+        ),
+        selectedItemBuilder:
+            (context) =>
+                items
+                    .map(
+                      (item) => Text(
+                        item,
+                        style: GoogleFonts.jost(
+                          color: AppColors.textPrimary,
+                          fontSize: 14,
+                        ),
+                      ),
+                    )
+                    .toList(),
         decoration: InputDecoration(
           labelText: label,
-          border: const OutlineInputBorder(),
+          labelStyle: GoogleFonts.jost(
+            color: AppColors.textSecondary,
+            fontSize: 13,
+          ),
+          floatingLabelStyle: GoogleFonts.jost(
+            color: AppColors.gold,
+            fontSize: 12,
+          ),
+          filled: true,
+          fillColor: AppColors.surfaceElevated,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.borderGold),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.borderGold),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.gold, width: 1.5),
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
         ),
-        value: items.contains(selectedValue) ? selectedValue : null,
         items:
-            items.map((String item) {
-              return DropdownMenuItem<String>(value: item, child: Text(item));
-            }).toList(),
+            items
+                .map(
+                  (item) => DropdownMenuItem<String>(
+                    value: item,
+                    child: Text(
+                      item,
+                      style: GoogleFonts.jost(
+                        color: AppColors.textPrimary,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                )
+                .toList(),
         onChanged: onChanged,
         validator: (value) => value == null ? 'Please select $label' : null,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.richBlack,
+      appBar: AppBar(
+        backgroundColor: AppColors.obsidian,
+        foregroundColor: AppColors.textPrimary,
+        centerTitle: true,
+        iconTheme: const IconThemeData(color: AppColors.gold),
+        title: Text(
+          'Vehicle: ${widget.vehicleNumber}',
+          style: GoogleFonts.cormorantGaramond(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Logo ───────────────────────────────────────────────────
+              Center(
+                child: Container(
+                  width: 90,
+                  height: 90,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.surfaceDark,
+                    border: Border.all(
+                      color: AppColors.gold.withOpacity(0.3),
+                      width: 2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.gold.withOpacity(0.1),
+                        blurRadius: 20,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: ClipOval(
+                    child: Image.asset('images/logo.png', fit: BoxFit.contain),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // ── Owner Info ────────────────────────────────────────────
+              Text(
+                'Owner Information',
+                style: GoogleFonts.cormorantGaramond(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              goldDivider(),
+
+              _buildTextField(nameController, 'Name'),
+              _buildTextField(addressController, 'Address'),
+              _buildTextField(contactController, 'Contact'),
+              _buildTextField(emailController, 'Email', isEmail: true),
+
+              // ── Vehicle Info ──────────────────────────────────────────
+              Text(
+                'Vehicle Information',
+                style: GoogleFonts.cormorantGaramond(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              goldDivider(),
+
+              _buildTextField(vehicleYearController, 'Vehicle Year'),
+
+              _buildDropdownField(
+                'Brand',
+                vehicleModels.keys.toList(),
+                selectedBrand,
+                (value) {
+                  setState(() {
+                    selectedBrand = value;
+                    selectedModel = vehicleModels[selectedBrand]?.first;
+                  });
+                },
+              ),
+
+              if (selectedBrand != null)
+                _buildDropdownField(
+                  'Model',
+                  vehicleModels[selectedBrand] ?? [],
+                  selectedModel,
+                  (value) {
+                    setState(() => selectedModel = value);
+                  },
+                ),
+
+              const SizedBox(height: 8),
+
+              // ── Continue Button ───────────────────────────────────────
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.gold,
+                    foregroundColor: AppColors.obsidian,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  onPressed: isLoading ? null : _handleContinue,
+                  child:
+                      isLoading
+                          ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              color: AppColors.obsidian,
+                              strokeWidth: 2,
+                            ),
+                          )
+                          : Text(
+                            'CONTINUE',
+                            style: GoogleFonts.jost(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.5,
+                              color: AppColors.obsidian,
+                            ),
+                          ),
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
       ),
     );
   }

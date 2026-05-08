@@ -10,6 +10,11 @@ import 'package:dr_cars_fyp/service/service_history.dart';
 import 'package:dr_cars_fyp/user/user_profile.dart';
 import 'package:dr_cars_fyp/auth/signin.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
+import 'package:dr_cars_fyp/l10n/app_strings.dart';
+import 'package:dr_cars_fyp/providers/locale_provider.dart';
+import 'package:dr_cars_fyp/theme/app_theme.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:dr_cars_fyp/widgets/app_bottom_nav.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -28,119 +33,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _selectedLanguage = 'en';
   bool _isLoading = false;
 
-  static const Map<String, Map<String, String>> translations = {
-    'en': {
-      'settings': 'Settings',
-      'account_settings': 'Account Settings',
-      'personal_information': 'Personal Information',
-      'notifications': 'Notifications',
-      'language': 'Language',
-      'dark_mode': 'Dark Mode',
-      'privacy_security': 'Privacy & Security',
-      'privacy_policy': 'Privacy Policy',
-      'security': 'Security',
-      'change_password': 'Change Password',
-      'support': 'Support',
-      'help_support': 'Help & Support',
-      'terms': 'Terms and Conditions',
-      'about': 'About',
-      'account_actions': 'Account Actions',
-      'delete_account': 'Delete account',
-      'logout': 'Log Out',
-      'save': 'Save',
-      'cancel': 'Cancel',
-      'close': 'Close',
-      'yes': 'Yes',
-      'no': 'No',
-      'change': 'Change',
-      'current_password': 'Current Password',
-      'new_password': 'New Password',
-      'confirm_password': 'Confirm Password',
-      'contact_email': 'Email Support',
-      'contact_call': 'Call Support',
-      'contact_chat': 'Live Chat',
-      'delete_confirm': 'This action cannot be undone.',
-      'logout_confirm': 'Are you sure you want to log out?',
-      'delete_confirm_title': 'Delete Account',
-      'logout_confirm_title': 'Log Out',
-      'two_factor_soon': 'Two-factor auth coming soon',
-    },
-    'si': {
-      'settings': 'සැකසුම්',
-      'account_settings': 'ගිණුම් සැකසුම්',
-      'personal_information': 'පෞද්ගලික තොරතුරු',
-      'notifications': 'නොටිෆිකේෂන්ස්',
-      'language': 'භාෂාව',
-      'dark_mode': 'අඳුරු තේමාව',
-      'privacy_security': 'පෞද්ගලිකත්වය සහ ආරක්ෂාව',
-      'privacy_policy': 'පෞද්ගලිකත්ව ප්‍රතිපත්තිය',
-      'security': 'ආරක්ෂාව',
-      'change_password': 'මුරපදය වෙනස් කරන්න',
-      'support': 'සහාය',
-      'help_support': 'උදව් සහ සහාය',
-      'terms': 'නියම හා කොන්දේසි',
-      'about': 'අප ගැන',
-      'account_actions': 'ගිණුම් ක්‍රියා',
-      'delete_account': 'ගිණුම මකන්න',
-      'logout': 'ලොග් අවුට් ',
-      'save': 'සේව් කරන්න',
-      'cancel': 'අවලංගු කරන්න',
-      'close': 'වසන්න',
-      'yes': 'ඔව්',
-      'no': 'නැහැ',
-      'change': 'වෙනස් කරන්න',
-      'current_password': 'වත්මන් මුරපදය',
-      'new_password': 'නව මුරපදය',
-      'confirm_password': 'නව මුරපදය තහවුරු කරන්න',
-      'contact_email': 'විද්යුත් තැපැල් සහය',
-      'contact_call': 'කතා කරන්න',
-      'contact_chat': 'සජීවී චැට්',
-      'delete_confirm': 'මෙම ක්‍රියාව නැවත ආපසු හැරවිය නොහැක.',
-      'logout_confirm': 'ඔබට ලොග් අවුට් වීමට අවශ්‍ය ද?',
-      'delete_confirm_title': 'ගිණුම මකන්න',
-      'logout_confirm_title': 'ලොග් අවුට් වන්න',
-      'two_factor_soon': 'දෙ-පියවර ඉක්මනින්',
-    },
-    'ta': {
-      'settings': 'அமைப்புகள்',
-      'account_settings': 'கணக்கு அமைப்புகள்',
-      'personal_information': 'தனிப்பட்ட தகவல்கள்',
-      'notifications': 'அறிவிப்புகள்',
-      'language': 'மொழி',
-      'dark_mode': 'இருண்ட தீம்',
-      'privacy_security': 'தனியுரிமை மற்றும் பாதுகாப்பு',
-      'privacy_policy': 'தனியுரிமை கொள்கை',
-      'security': 'பாதுகாப்பு',
-      'change_password': 'மறைச்சொல்லை மாற்றவும்',
-      'support': 'ஆதரவு',
-      'help_support': 'உதவி மற்றும் ஆதரவு',
-      'terms': 'கடிதப்பதிவுகள் மற்றும் நிபந்தனைகள்',
-      'about': 'பற்றி',
-      'account_actions': 'கணக்கு நடவடிக்கைகள்',
-      'delete_account': 'கணக்கை நீக்கவும்',
-      'logout': 'வெளியேறு',
-      'save': 'சேமிக்கவும்',
-      'cancel': 'ரத்துசெய்',
-      'close': 'மூடு',
-      'yes': 'ஆம்',
-      'no': 'இல்லை',
-      'change': 'மாற்றவும்',
-      'current_password': 'தற்போதைய மறைச்சொல்',
-      'new_password': 'புதிய மறைச்சொல்',
-      'confirm_password': 'மறைச்சொல்லை உறுதி செய்',
-      'contact_email': 'மின்னஞ்சல் ஆதரவு',
-      'contact_call': 'அழைப்பு ஆதரவு',
-      'contact_chat': 'நேரடி உரையாடல்',
-      'delete_confirm': 'இந்த செயலைத் திருப்ப முடியாது.',
-      'logout_confirm': 'வெளியேற வேண்டுமா?',
-      'delete_confirm_title': 'கணக்கை நீக்கு',
-      'logout_confirm_title': 'வெளியேறு',
-      'two_factor_soon': 'இரு-படி விரைவில் வருகிறது',
-    },
-  };
-
-  String t(String key) =>
-      translations[_selectedLanguage]?[key] ?? translations['en']![key]!;
+  String t(String key) => AppStrings.get(key, _selectedLanguage);
 
   @override
   void initState() {
@@ -181,6 +74,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await prefs.setBool('darkMode', _darkMode);
     await prefs.setString('language', _selectedLanguage);
     themeNotifier.value = _darkMode ? ThemeMode.dark : ThemeMode.light;
+    await saveLocale(_selectedLanguage);
 
     final userId = await _authService.getCurrentUserId();
     if (userId != null && userId.isNotEmpty) {
@@ -577,201 +471,175 @@ Chat: https://wa.me/+94772111426
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Settings',
-          style: TextStyle(
-            fontSize: 25,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        backgroundColor: const Color.fromARGB(255, 45, 44, 44),
-        elevation: 0,
-        leading: BackButton(),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.save),
-            onPressed: _isLoading ? null : _saveSettings,
-          ),
-        ],
-      ),
-      body:
-          _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : ListView(
-                padding: EdgeInsets.zero,
-                children: [
-                  _sectionHeader(t('account_settings')),
-                  ListTile(
-                    leading: const Icon(Icons.person_outline),
-                    title: Text(t('personal_information')),
-                    onTap: _showPersonalInfoDialog,
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.notifications_outlined),
-                    title: Text(t('notifications')),
-                    trailing: Switch(
-                      value: _notificationsEnabled,
-                      onChanged: (v) async {
-                        if (v) {
-                          await OneSignal.User.pushSubscription.optIn();
-                        } else {
-                          await OneSignal.User.pushSubscription.optOut();
-                        }
-
-                        final prefs = await SharedPreferences.getInstance();
-                        await prefs.setBool('notificationsEnabled', v);
-
-                        setState(() => _notificationsEnabled = v);
-                      },
-                    ),
-                  ),
-
-                  ListTile(
-                    leading: const Icon(Icons.language),
-                    title: Text(t('language'), style: TextStyle(fontSize: 16)),
-                    trailing: DropdownButton<String>(
-                      value: _selectedLanguage,
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'en',
-                          child: Text(
-                            'English',
-                            style: TextStyle(fontSize: 16),
-                          ),
-                        ),
-                        DropdownMenuItem(
-                          value: 'si',
-                          child: Text('සිංහල', style: TextStyle(fontSize: 16)),
-                        ),
-                        DropdownMenuItem(
-                          value: 'ta',
-                          child: Text('தமிழ்', style: TextStyle(fontSize: 16)),
-                        ),
-                      ],
-                      onChanged: (v) {
-                        if (v != null) setState(() => _selectedLanguage = v);
-                      },
-                    ),
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.dark_mode),
-                    title: Text(t('dark_mode')),
-                    trailing: Switch(
-                      value: _darkMode,
-                      onChanged:
-                          (v) => setState(() {
-                            _darkMode = v;
-                            themeNotifier.value =
-                                v ? ThemeMode.dark : ThemeMode.light;
-                          }),
-                    ),
-                  ),
-
-                  _sectionHeader(t('privacy_security')),
-                  ListTile(
-                    leading: const Icon(Icons.lock_outline),
-                    title: Text(t('privacy_policy')),
-                    onTap: _showPrivacyPolicy,
-                  ),
-
-                  ListTile(
-                    leading: const Icon(Icons.password),
-                    title: Text(t('change_password')),
-                    onTap: _showChangePasswordDialog,
-                  ),
-
-                  _sectionHeader(t('support')),
-                  ListTile(
-                    leading: const Icon(Icons.help_outline),
-                    title: Text(t('help_support')),
-                    onTap: _showHelpSupportDialog,
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.description_outlined),
-                    title: Text(t('terms')),
-                    onTap: _showTerms,
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.info_outline),
-                    title: Text(t('about')),
-                    onTap: _showAboutDialog,
-                  ),
-
-                  _sectionHeader(t('account_actions')),
-                  ListTile(
-                    leading: const Icon(
-                      Icons.delete_outline,
-                      color: Colors.red,
-                    ),
-                    title: Text(
-                      t('delete_account'),
-                      style: const TextStyle(color: Colors.red),
-                    ),
-                    onTap: _showDeleteConfirm,
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.logout),
-                    title: Text(t('logout')),
-                    onTap: _showLogoutConfirm,
-                  ),
-                ],
-              ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 4,
-        selectedItemColor: theme.colorScheme.secondary,
-        unselectedItemColor: theme.iconTheme.color,
-        onTap: (i) {
-          final routes = [
-            () => Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => DashboardScreen()),
-            ),
-            () => Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => MapScreen()),
-            ),
-            () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => OBD2Page()),
-            ),
-            () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => ServiceHistorypage()),
-            ),
-            () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => ProfileScreen()),
-            ),
-          ];
-          routes[i]();
-        },
-        items: [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.map), label: ''),
-          BottomNavigationBarItem(
-            icon: Image.asset('images/logo.png', width: 30, height: 30),
-            label: '',
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.history), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: ''),
-        ],
-      ),
-    );
-  }
-
   Widget _sectionHeader(String title) => Padding(
     padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
     child: Text(
-      title,
-      style: Theme.of(
-        context,
-      ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+      title.toUpperCase(),
+      style: GoogleFonts.jost(
+        fontSize: 11,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 2.5,
+        color: AppColors.gold,
+      ),
     ),
   );
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<String>(
+      valueListenable: localeNotifier,
+      builder: (context, lang, _) {
+        final theme = Theme.of(context);
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(
+              AppStrings.get('settings', lang),
+              style: const TextStyle(
+                fontSize: 25,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            backgroundColor: AppColors.obsidian,
+            elevation: 0,
+            leading: const BackButton(),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.save),
+                onPressed: _isLoading ? null : _saveSettings,
+              ),
+            ],
+          ),
+          body:
+              _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : ListView(
+                    padding: EdgeInsets.zero,
+                    children: [
+                      _sectionHeader(t('account_settings')),
+                      ListTile(
+                        leading: const Icon(Icons.person_outline),
+                        title: Text(t('personal_information')),
+                        onTap: _showPersonalInfoDialog,
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.notifications_outlined),
+                        title: Text(t('notifications')),
+                        trailing: Switch(
+                          value: _notificationsEnabled,
+                          onChanged: (v) async {
+                            if (v) {
+                              await OneSignal.User.pushSubscription.optIn();
+                            } else {
+                              await OneSignal.User.pushSubscription.optOut();
+                            }
+                            final prefs = await SharedPreferences.getInstance();
+                            await prefs.setBool('notificationsEnabled', v);
+                            setState(() => _notificationsEnabled = v);
+                          },
+                        ),
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.language),
+                        title: Text(
+                          t('language'),
+                          style: const TextStyle(fontSize: 16),
+                        ),
+                        trailing: DropdownButton<String>(
+                          value: _selectedLanguage,
+                          items: const [
+                            DropdownMenuItem(
+                              value: 'en',
+                              child: Text(
+                                'English',
+                                style: TextStyle(fontSize: 16),
+                              ),
+                            ),
+                            DropdownMenuItem(
+                              value: 'si',
+                              child: Text(
+                                'සිංහල',
+                                style: TextStyle(fontSize: 16),
+                              ),
+                            ),
+                            DropdownMenuItem(
+                              value: 'ta',
+                              child: Text(
+                                'தமிழ்',
+                                style: TextStyle(fontSize: 16),
+                              ),
+                            ),
+                          ],
+                          onChanged: (v) {
+                            if (v != null) {
+                              setState(() => _selectedLanguage = v);
+                              saveLocale(v);
+                            }
+                          },
+                        ),
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.dark_mode),
+                        title: Text(t('dark_mode')),
+                        trailing: Switch(
+                          value: _darkMode,
+                          onChanged:
+                              (v) => setState(() {
+                                _darkMode = v;
+                                themeNotifier.value =
+                                    v ? ThemeMode.dark : ThemeMode.light;
+                              }),
+                        ),
+                      ),
+                      _sectionHeader(t('privacy_security')),
+                      ListTile(
+                        leading: const Icon(Icons.lock_outline),
+                        title: Text(t('privacy_policy')),
+                        onTap: _showPrivacyPolicy,
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.password),
+                        title: Text(t('change_password')),
+                        onTap: _showChangePasswordDialog,
+                      ),
+                      _sectionHeader(t('support')),
+                      ListTile(
+                        leading: const Icon(Icons.help_outline),
+                        title: Text(t('help_support')),
+                        onTap: _showHelpSupportDialog,
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.description_outlined),
+                        title: Text(t('terms')),
+                        onTap: _showTerms,
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.info_outline),
+                        title: Text(t('about')),
+                        onTap: _showAboutDialog,
+                      ),
+                      _sectionHeader(t('account_actions')),
+                      ListTile(
+                        leading: const Icon(
+                          Icons.delete_outline,
+                          color: Colors.red,
+                        ),
+                        title: Text(
+                          t('delete_account'),
+                          style: const TextStyle(color: Colors.red),
+                        ),
+                        onTap: _showDeleteConfirm,
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.logout),
+                        title: Text(t('logout')),
+                        onTap: _showLogoutConfirm,
+                      ),
+                    ],
+                  ),
+          bottomNavigationBar: AppBottomNav(currentIndex: 4),
+        );
+      },
+    );
+  }
 }

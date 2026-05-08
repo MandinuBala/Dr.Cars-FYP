@@ -7,6 +7,11 @@ import 'package:dr_cars_fyp/map/mapscreen.dart';
 import 'package:dr_cars_fyp/user/user_profile.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:dr_cars_fyp/l10n/app_strings.dart';
+import 'package:dr_cars_fyp/providers/locale_provider.dart';
+import 'package:dr_cars_fyp/theme/app_theme.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:dr_cars_fyp/widgets/app_bottom_nav.dart';
 
 class ServiceHistorypage extends StatefulWidget {
   const ServiceHistorypage({super.key});
@@ -42,6 +47,55 @@ class _ServiceHistorypageState extends State<ServiceHistorypage> {
     'Pre-purchase inspections',
     'Diagnostic testing',
   ];
+  static const Map<String, Map<String, String>> _serviceTypeTranslations = {
+    'Full Service': {'si': 'සම්පූර්ණ සේවාව', 'ta': 'முழு சேவை'},
+    'Oil Filter Change': {
+      'si': 'තෙල් පෙරහන් මාරුව',
+      'ta': 'எண்ணெய் வடிகட்டி மாற்றம்',
+    },
+    'Tire pressure and rotation check': {
+      'si': 'ටයර් පීඩන පරීක්ෂාව',
+      'ta': 'டயர் அழுத்த சோதனை',
+    },
+    'Fluid level check': {'si': 'තරල මට්ටම් පරීක්ෂාව', 'ta': 'திரவ அளவு சோதனை'},
+    'Battery check and replacements': {
+      'si': 'බැටරි පරීක්ෂාව',
+      'ta': 'பேட்டரி சோதனை',
+    },
+    'Wiper blade replacement': {
+      'si': 'වයිපර් තලය මාරුව',
+      'ta': 'வைப்பர் மாற்றம்',
+    },
+    'Light bulb check': {'si': 'ලාම්පු පරීක්ෂාව', 'ta': 'விளக்கு சோதனை'},
+    'Brake system services': {'si': 'බ්‍රේක් සේවාව', 'ta': 'பிரேக் சேவை'},
+    'Suspension and alignment services': {
+      'si': 'સસ්පෙන්ෂන් සේවාව',
+      'ta': 'சஸ்பென்ஷன் சேவை',
+    },
+    'Exhaust system service': {
+      'si': 'නික්මෙන් ගෑස් සේවාව',
+      'ta': 'எக்ஸாஸ்ட் சேவை',
+    },
+    'Air conditioning services': {
+      'si': 'ශීතකරණ සේවාව',
+      'ta': 'குளிரூட்டல் சேவை',
+    },
+    'Electrical system services': {'si': 'විදුලි සේවාව', 'ta': 'மின் சேவை'},
+    'Car detailing (Interior and exterior cleaning, waxing)': {
+      'si': 'වාහන පිරිසිදු කිරීම',
+      'ta': 'கார் சுத்தம்',
+    },
+    'Tire sales and installation': {'si': 'ටයර් විකිණීම', 'ta': 'டயர் விற்பனை'},
+    'Pre-purchase inspections': {
+      'si': 'මිලදී ගැනීමට පෙර පරීක්ෂාව',
+      'ta': 'வாங்கும் முன் சோதனை',
+    },
+    'Diagnostic testing': {'si': 'රෝග නිර්ණය', 'ta': 'நோயறிதல் சோதனை'},
+  };
+  String _translateServiceType(String type, String lang) {
+    if (lang == 'en') return type;
+    return _serviceTypeTranslations[type]?[lang] ?? type;
+  }
 
   @override
   void initState() {
@@ -153,45 +207,55 @@ class _ServiceHistorypageState extends State<ServiceHistorypage> {
     }
   }
 
-  void _showRecordDetails(Map<String, dynamic> record) {
+  void _showRecordDetails(Map<String, dynamic> record, String lang) {
     showDialog(
       context: context,
       builder:
           (context) => AlertDialog(
-            title: const Text('Service Details'),
+            title: Text(AppStrings.get('service_details', lang)),
             content: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildDetailRow('Service Type', record['serviceType']),
                   _buildDetailRow(
-                    'Date',
+                    AppStrings.get('service_type', lang),
+                    record['serviceType'],
+                  ),
+                  _buildDetailRow(
+                    AppStrings.get('date', lang),
+
                     (_parseDate(record['date'])?.toString().split(' ')[0]) ??
                         '-',
                   ),
                   _buildDetailRow(
-                    'Current Mileage',
+                    AppStrings.get('current_mileage', lang),
                     '${record['currentMileage']} KM',
                   ),
                   _buildDetailRow(
-                    'Service Mileage',
+                    AppStrings.get('service_mileage', lang),
                     '${record['serviceMileage']} KM',
                   ),
                   _buildDetailRow(
-                    'Service Provider',
+                    AppStrings.get('service_provider', lang),
                     record['serviceProvider'],
                   ),
                   if (record['serviceType'] == 'Oil Filter Change')
-                    _buildDetailRow('Oil Type', record['oilType'] ?? ''),
+                    _buildDetailRow(
+                      AppStrings.get('oil_type', lang),
+                      record['oilType'] ?? '',
+                    ),
                   if (record['notes'] != null && record['notes'].isNotEmpty)
-                    _buildDetailRow('Notes', record['notes']),
+                    _buildDetailRow(
+                      AppStrings.get('notes', lang),
+                      record['notes'],
+                    ),
                 ],
               ),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Close'),
+                child: Text(AppStrings.get('close', lang)),
               ),
             ],
           ),
@@ -220,199 +284,181 @@ class _ServiceHistorypageState extends State<ServiceHistorypage> {
 
   @override
   Widget build(BuildContext context) {
-    final filteredRecords = _getFilteredRecords();
+    return ValueListenableBuilder<String>(
+      valueListenable: localeNotifier,
+      builder: (context, lang, _) {
+        final filteredRecords = _getFilteredRecords();
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text(
-          'Service History',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 25,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        backgroundColor: const Color.fromARGB(255, 72, 64, 122),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // Search bar
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: 'Search by service provider',
-                  border: InputBorder.none,
-                  prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                ),
-                onChanged: (_) => setState(() {}),
+        return Scaffold(
+          backgroundColor: AppColors.richBlack,
+          appBar: AppBar(
+            title: Text(
+              AppStrings.get('service_history', lang),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 25,
+                fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 20),
-            Row(
+            backgroundColor: AppColors.obsidian,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios, size: 20),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ),
+          body: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
               children: [
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey[300]!),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        isExpanded: true,
-                        value: _selectedFilter,
-                        hint: const Text('Select Service Type'),
-                        items:
-                            _serviceTypes
-                                .map(
-                                  (type) => DropdownMenuItem(
-                                    value: type,
-                                    child: Text(type),
-                                  ),
-                                )
-                                .toList(),
-                        onChanged:
-                            (value) => setState(() => _selectedFilter = value),
+                // Search bar
+                Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceDark,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: AppStrings.get('search_provider', lang),
+                      border: InputBorder.none,
+                      prefixIcon: const Icon(
+                        Icons.search,
+                        color: AppColors.gold,
                       ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                      ),
+                    ),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceDark,
+                          border: Border.all(color: AppColors.borderGold),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            isExpanded: true,
+                            value: _selectedFilter,
+                            hint: Text(
+                              AppStrings.get('select_service_type', lang),
+                            ),
+                            items:
+                                _serviceTypes
+                                    .map(
+                                      (type) => DropdownMenuItem(
+                                        value:
+                                            type, // ← keeps English value for database matching
+                                        child: Text(
+                                          _translateServiceType(type, lang),
+                                        ), // ← shows translated label
+                                      ),
+                                    )
+                                    .toList(),
+                            onChanged:
+                                (value) =>
+                                    setState(() => _selectedFilter = value),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => _selectDate(context),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceDark,
+                            border: Border.all(color: AppColors.borderGold),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                _selectedDate == null
+                                    ? AppStrings.get('select_date', lang)
+                                    : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
+                                style: const TextStyle(
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              const Icon(
+                                Icons.calendar_today,
+                                size: 16,
+                                color: AppColors.gold,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    AppStrings.get('record_details', lang),
+                    style: GoogleFonts.jost(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.gold,
+                      letterSpacing: 2.5,
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(height: 16),
                 Expanded(
-                  child: InkWell(
-                    onTap: () => _selectDate(context),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey[300]!),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            _selectedDate == null
-                                ? 'Select Date'
-                                : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
-                            style: TextStyle(color: Colors.grey[800]),
+                  child:
+                      _isLoading
+                          ? const Center(child: CircularProgressIndicator())
+                          : filteredRecords.isEmpty
+                          ? Center(
+                            child: Text(AppStrings.get('no_records', lang)),
+                          )
+                          : ListView.builder(
+                            itemCount: filteredRecords.length,
+                            itemBuilder: (context, index) {
+                              final record = filteredRecords[index];
+                              return GestureDetector(
+                                onTap: () => _showRecordDetails(record, lang),
+                                child: ServiceRecordCard(
+                                  date:
+                                      (_parseDate(
+                                        record['date'],
+                                      )?.toString().split(' ')[0]) ??
+                                      '-',
+                                  mileage: record['serviceMileage'].toString(),
+                                  provider: record['serviceProvider'],
+                                  serviceType: record['serviceType'],
+                                ),
+                              );
+                            },
                           ),
-                          const Icon(
-                            Icons.calendar_today,
-                            size: 16,
-                            color: Colors.grey,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 24),
-            const Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Record Details',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child:
-                  _isLoading
-                      ? const Center(child: CircularProgressIndicator())
-                      : filteredRecords.isEmpty
-                      ? const Center(child: Text('No service records found'))
-                      : ListView.builder(
-                        itemCount: filteredRecords.length,
-                        itemBuilder: (context, index) {
-                          final record = filteredRecords[index];
-                          return GestureDetector(
-                            onTap: () => _showRecordDetails(record),
-                            child: ServiceRecordCard(
-                              date:
-                                  (_parseDate(
-                                    record['date'],
-                                  )?.toString().split(' ')[0]) ??
-                                  '-',
-                              mileage: record['serviceMileage'].toString(),
-                              provider: record['serviceProvider'],
-                              serviceType: record['serviceType'],
-                            ),
-                          );
-                        },
-                      ),
-            ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
-        selectedItemColor: Colors.red,
-        unselectedItemColor: Colors.black,
-        currentIndex: _selectedIndex,
-        type: BottomNavigationBarType.fixed,
-        showSelectedLabels: false,
-        showUnselectedLabels: false,
-        onTap: (index) {
-          if (index == _selectedIndex) return;
-          setState(() => _selectedIndex = index);
-          if (index == 0) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => const DashboardScreen()),
-            );
-          } else if (index == 1) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => MapScreen()),
-            );
-          } else if (index == 2) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => OBD2Page()),
-            );
-          } else if (index == 3) {
-            // Already here
-          } else if (index == 4) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => const ProfileScreen()),
-            );
-          }
-        },
-        items: [
-          const BottomNavigationBarItem(icon: Icon(Icons.home), label: ''),
-          const BottomNavigationBarItem(icon: Icon(Icons.map), label: ''),
-          BottomNavigationBarItem(
-            icon: Image.asset('images/logo.png', height: 24),
-            label: '',
           ),
-          const BottomNavigationBarItem(icon: Icon(Icons.history), label: ''),
-          const BottomNavigationBarItem(icon: Icon(Icons.person), label: ''),
-        ],
-      ),
+          bottomNavigationBar: AppBottomNav(currentIndex: 3),
+        );
+      },
     );
   }
 }
+
 
 class ServiceRecordCard extends StatelessWidget {
   final String date;
@@ -434,14 +480,14 @@ class ServiceRecordCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surfaceDark,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.borderGold),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
+            color: AppColors.gold.withOpacity(0.05),
             blurRadius: 10,
-            offset: const Offset(0, 1),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -453,29 +499,40 @@ class ServiceRecordCard extends StatelessWidget {
             children: [
               Text(
                 date,
-                style: const TextStyle(
+                style: GoogleFonts.jost(
                   fontWeight: FontWeight.w500,
-                  fontSize: 16,
+                  fontSize: 13,
+                  color: AppColors.gold,
+                  letterSpacing: 1,
                 ),
               ),
               Text(
                 serviceType,
-                style: const TextStyle(
+                style: GoogleFonts.jost(
                   fontWeight: FontWeight.w600,
-                  fontSize: 16,
+                  fontSize: 13,
+                  color: AppColors.textPrimary,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
+          Container(height: 1, color: AppColors.borderGold),
+          const SizedBox(height: 10),
           Text(
             '$mileage KM',
-            style: TextStyle(color: Colors.grey[600], fontSize: 14),
+            style: GoogleFonts.jost(
+              color: AppColors.textSecondary,
+              fontSize: 13,
+            ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           Text(
             provider,
-            style: TextStyle(color: Colors.grey[600], fontSize: 14),
+            style: GoogleFonts.jost(
+              color: AppColors.textSecondary,
+              fontSize: 13,
+            ),
           ),
         ],
       ),

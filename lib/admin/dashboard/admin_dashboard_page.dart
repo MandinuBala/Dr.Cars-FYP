@@ -3,6 +3,11 @@ import 'package:dr_cars_fyp/admin/requests/rejected_requests_page.dart';
 import 'package:dr_cars_fyp/auth/signin.dart';
 import 'package:flutter/material.dart';
 import 'package:dr_cars_fyp/auth/auth_service.dart';
+import 'package:dr_cars_fyp/l10n/app_strings.dart';
+import 'package:dr_cars_fyp/providers/locale_provider.dart';
+import 'package:dr_cars_fyp/settings/settings.dart';
+import 'package:dr_cars_fyp/theme/app_theme.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class ServiceCenterApprovalPage extends StatefulWidget {
   const ServiceCenterApprovalPage({super.key});
@@ -24,38 +29,84 @@ class _ServiceCenterApprovalPageState extends State<ServiceCenterApprovalPage> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<Map<String, dynamic>?>(
-      future: _currentUserFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
+    return ValueListenableBuilder<String>(
+      valueListenable: localeNotifier,
+      builder: (context, lang, _) {
+        return FutureBuilder<Map<String, dynamic>?>(
+          future: _currentUserFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState != ConnectionState.done) {
+              return const Scaffold(
+                body: Center(child: CircularProgressIndicator()),
+              );
+            }
 
-        final user = snapshot.data;
-        final role =
-            user?['userType']?.toString() ?? user?['User Type']?.toString();
+            final user = snapshot.data;
+            final role =
+                user?['userType']?.toString() ?? user?['User Type']?.toString();
 
-        if (role != 'App Admin') {
-          return Scaffold(
-            appBar: AppBar(
-              title: const Text('Access Denied'),
-              backgroundColor: Colors.black,
-              foregroundColor: Colors.white,
-            ),
-            body: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text(
-                      'Only the App Admin account can access this page.',
-                      textAlign: TextAlign.center,
+            if (role != 'App Admin') {
+              return Scaffold(
+                appBar: AppBar(
+                  title: Text(AppStrings.get('access_denied', lang)),
+                  backgroundColor: AppColors.obsidian,
+                  foregroundColor: AppColors.textPrimary,
+                ),
+                body: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          AppStrings.get('admin_only', lang),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () async {
+                            await _authService.logout();
+                            if (!context.mounted) return;
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => SignInScreen(),
+                              ),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.gold,
+                            foregroundColor: AppColors.obsidian,
+                          ),
+                          child: Text(AppStrings.get('back_to_signin', lang)),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
+                  ),
+                ),
+              );
+            }
+
+            return DefaultTabController(
+              length: 2,
+              child: Scaffold(
+                appBar: AppBar(
+                  automaticallyImplyLeading: false,
+                  title: Text(AppStrings.get('service_center_requests', lang)),
+                  backgroundColor: AppColors.obsidian,
+                  foregroundColor: AppColors.textPrimary,
+                  actions: [
+                    IconButton(
+                      icon: const Icon(Icons.settings, color: Colors.white),
+                      tooltip: AppStrings.get('settings', lang),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => SettingsScreen()),
+                        );
+                      },
+                    ),
+                    IconButton(
                       onPressed: () async {
                         await _authService.logout();
                         if (!context.mounted) return;
@@ -66,53 +117,28 @@ class _ServiceCenterApprovalPageState extends State<ServiceCenterApprovalPage> {
                           ),
                         );
                       },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.black,
-                        foregroundColor: Colors.white,
-                      ),
-                      child: const Text('Back to Sign In'),
+                      icon: const Icon(Icons.logout, color: Colors.white),
+                      tooltip: AppStrings.get('sign_out', lang),
                     ),
                   ],
-                ),
-              ),
-            ),
-          );
-        }
+                  bottom: TabBar(
+                    indicatorColor: AppColors.gold,
+                    labelColor: AppColors.gold,
+                    unselectedLabelColor: AppColors.textMuted,
+                    labelStyle: GoogleFonts.jost(fontWeight: FontWeight.w600),
 
-        return DefaultTabController(
-          length: 2,
-          child: Scaffold(
-            appBar: AppBar(
-              automaticallyImplyLeading: false,
-              title: const Text("Service Center Requests"),
-              backgroundColor: Colors.black,
-              foregroundColor: Colors.white,
-              actions: [
-                IconButton(
-                  onPressed: () async {
-                    await _authService.logout();
-                    if (!context.mounted) return;
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => SignInScreen()),
-                    );
-                  },
-                  icon: const Icon(Icons.logout, color: Colors.white),
-                  tooltip: 'Sign Out',
+                    tabs: [
+                      Tab(text: AppStrings.get('pending', lang)),
+                      Tab(text: AppStrings.get('rejected', lang)),
+                    ],
+                  ),
                 ),
-              ],
-              bottom: const TabBar(
-                indicatorColor: Colors.white,
-                labelColor: Colors.amber,
-                unselectedLabelColor: Colors.grey,
-                labelStyle: TextStyle(fontWeight: FontWeight.bold),
-                tabs: [Tab(text: 'Pending'), Tab(text: 'Rejected')],
+                body: const TabBarView(
+                  children: [PendingRequestsTab(), RejectedRequestsTab()],
+                ),
               ),
-            ),
-            body: const TabBarView(
-              children: [PendingRequestsTab(), RejectedRequestsTab()],
-            ),
-          ),
+            );
+          },
         );
       },
     );

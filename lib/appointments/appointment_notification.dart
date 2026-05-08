@@ -1,9 +1,12 @@
+// lib/appointments/appointment_notification.dart
 import 'dart:async';
 import 'dart:convert';
 
 import 'package:dr_cars_fyp/auth/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:dr_cars_fyp/theme/app_theme.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AppointmentNotificationPage extends StatefulWidget {
   const AppointmentNotificationPage({super.key});
@@ -49,9 +52,7 @@ class _AppointmentNotificationPageState
         currentUser?['_id']?.toString() ??
         currentUser?['userId']?.toString();
 
-    if (uid == null || uid.isEmpty) {
-      return;
-    }
+    if (uid == null || uid.isEmpty) return;
 
     try {
       final vehicle = await _authService.getVehicleByUserId(uid);
@@ -62,9 +63,7 @@ class _AppointmentNotificationPageState
               vehicle['plateNumber']?.toString();
         });
       }
-    } catch (_) {
-      // Keep behavior silent and show empty state if lookup fails.
-    }
+    } catch (_) {}
   }
 
   Future<void> _fetchAppointments() async {
@@ -115,23 +114,18 @@ class _AppointmentNotificationPageState
   }
 
   Future<void> _refreshAppointmentsSilently() async {
-    if (!mounted || vehicleNumber == null || vehicleNumber!.isEmpty) {
-      return;
-    }
+    if (!mounted || vehicleNumber == null || vehicleNumber!.isEmpty) return;
     await _fetchAppointments();
   }
 
-  int _countByStatus(String status) {
-    return _appointments.where((a) => a['status'] == status).length;
-  }
+  int _countByStatus(String status) =>
+      _appointments.where((a) => a['status'] == status).length;
 
-  List<Map<String, dynamic>> _appointmentsByStatus(String status) {
-    return _appointments.where((a) => a['status'] == status).toList();
-  }
+  List<Map<String, dynamic>> _appointmentsByStatus(String status) =>
+      _appointments.where((a) => a['status'] == status).toList();
 
   Future<Map<String, dynamic>?> _getUserById(String id) async {
     if (id.isEmpty) return null;
-
     try {
       final response = await http.get(
         Uri.parse('${_authService.baseUrl}/users/${Uri.encodeComponent(id)}'),
@@ -139,106 +133,128 @@ class _AppointmentNotificationPageState
       if (response.statusCode == 200) {
         return Map<String, dynamic>.from(jsonDecode(response.body) as Map);
       }
-    } catch (_) {
-      // Keep UI fallback value on errors.
-    }
+    } catch (_) {}
     return null;
   }
 
   Future<void> _deleteAppointment(String id) async {
     if (id.isEmpty) return;
-
     final response = await http.delete(
       Uri.parse('${_authService.baseUrl}/appointments/$id'),
     );
-
     if (response.statusCode >= 200 && response.statusCode < 300) {
       await _fetchAppointments();
       return;
     }
-
     throw Exception('Failed to delete appointment');
   }
 
   Future<void> _updateAppointmentStatus(String id, String status) async {
     if (id.isEmpty) return;
-
     final response = await http.patch(
       Uri.parse('${_authService.baseUrl}/appointments/$id/status'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'status': status}),
     );
-
     if (response.statusCode >= 200 && response.statusCode < 300) {
       await _fetchAppointments();
       return;
     }
-
     throw Exception('Failed to update appointment');
   }
 
-  @override
-  Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-
-    return DefaultTabController(
-      length: 3,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text("Appointment Notifications"),
-          backgroundColor: Colors.black,
-          foregroundColor: Colors.white,
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(kToolbarHeight),
-            child: TabBar(
-              tabs: [
-                _tabLabel("Pending", _countByStatus('pending')),
-                _tabLabel("Accepted", _countByStatus('accepted')),
-                _tabLabel("Rejected", _countByStatus('rejected')),
-              ],
-              labelColor: Colors.amber,
-              unselectedLabelColor: Colors.white70,
-              indicatorColor: Colors.amber,
-            ),
-          ),
-        ),
-        body: TabBarView(
-          children: [
-            _buildAppointmentList("pending"),
-            _buildAppointmentList("accepted"),
-            _buildAppointmentList("rejected"),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _tabLabel(String label, int count) {
+  // ── Tab with badge ────────────────────────────────────────────────────────
+  Widget _tabLabel(String label, int count, Color badgeColor) {
     return Tab(
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(label),
-          if (count > 0)
+          if (count > 0) ...[
+            const SizedBox(width: 6),
             Container(
-              margin: const EdgeInsets.only(left: 6),
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: Colors.red,
-                borderRadius: BorderRadius.circular(12),
+                color: badgeColor,
+                borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
                 '$count',
-                style: const TextStyle(
-                  fontSize: 12,
+                style: GoogleFonts.jost(
+                  fontSize: 11,
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ),
+          ],
         ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: AppColors.richBlack,
+        body: const Center(
+          child: CircularProgressIndicator(color: AppColors.gold),
+        ),
+      );
+    }
+
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        backgroundColor: AppColors.richBlack,
+        appBar: AppBar(
+          backgroundColor: AppColors.obsidian,
+          foregroundColor: AppColors.textPrimary,
+          title: Text(
+            'Appointment Notifications',
+            style: GoogleFonts.cormorantGaramond(
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+              letterSpacing: 0.5,
+            ),
+          ),
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(kToolbarHeight),
+            child: TabBar(
+              labelColor: AppColors.gold,
+              unselectedLabelColor: AppColors.textMuted,
+              indicatorColor: AppColors.gold,
+              indicatorWeight: 2,
+              labelStyle: GoogleFonts.jost(
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+              unselectedLabelStyle: GoogleFonts.jost(fontSize: 13),
+              tabs: [
+                _tabLabel('Pending', _countByStatus('pending'), AppColors.gold),
+                _tabLabel(
+                  'Accepted',
+                  _countByStatus('accepted'),
+                  AppColors.success,
+                ),
+                _tabLabel(
+                  'Rejected',
+                  _countByStatus('rejected'),
+                  AppColors.error,
+                ),
+              ],
+            ),
+          ),
+        ),
+        body: TabBarView(
+          children: [
+            _buildAppointmentList('pending'),
+            _buildAppointmentList('accepted'),
+            _buildAppointmentList('rejected'),
+          ],
+        ),
       ),
     );
   }
@@ -247,10 +263,31 @@ class _AppointmentNotificationPageState
     final appointments = _appointmentsByStatus(status);
 
     if (appointments.isEmpty) {
-      return const Center(child: Text('No appointments found.'));
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              status == 'pending'
+                  ? Icons.hourglass_empty
+                  : status == 'accepted'
+                  ? Icons.check_circle_outline
+                  : Icons.cancel_outlined,
+              size: 48,
+              color: AppColors.textMuted,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'No $status appointments.',
+              style: GoogleFonts.jost(color: AppColors.textMuted, fontSize: 14),
+            ),
+          ],
+        ),
+      );
     }
 
     return ListView.builder(
+      padding: const EdgeInsets.all(16),
       itemCount: appointments.length,
       itemBuilder: (context, index) {
         final appointment = appointments[index];
@@ -277,118 +314,327 @@ class _AppointmentNotificationPageState
                     ? serviceTypes.map((e) => e.toString()).join(', ')
                     : '-';
 
-            return Card(
-              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text("Appointment ${index + 1}: $serviceCenterName"),
-                    Text("Model: ${appointment['vehicleModel'] ?? '-'}"),
-                    Text(
-                      "Date: ${appointment['date']?.toString().split('T').first ?? '-'}",
-                    ),
-                    Text("Time: ${appointment['time'] ?? '-'}"),
-                    Text("Status: ${appointment['status'] ?? '-'}"),
-                    const SizedBox(height: 6),
-                    Text("Services: $servicesText"),
-                    const SizedBox(height: 12),
-                    if (status == 'pending') ...[
-                      ElevatedButton(
-                        onPressed: () async {
-                          try {
-                            await _deleteAppointment(docId);
-                          } catch (e) {
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Error: $e')),
-                              );
-                            }
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          foregroundColor: Colors.white,
-                        ),
-                        child: const Text("Cancel"),
-                      ),
-                    ] else if (status == 'accepted') ...[
-                      ElevatedButton(
-                        onPressed: () async {
-                          try {
-                            await _deleteAppointment(docId);
-                          } catch (e) {
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Error: $e')),
-                              );
-                            }
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black,
-                          foregroundColor: Colors.white,
-                        ),
-                        child: const Text("Handed Over Vehicle"),
-                      ),
-                    ] else if (status == 'rejected') ...[
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: () async {
-                                try {
-                                  await _updateAppointmentStatus(
-                                    docId,
-                                    'pending',
-                                  );
-                                } catch (e) {
-                                  if (mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('Error: $e')),
-                                    );
-                                  }
-                                }
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.black,
-                                foregroundColor: Colors.white,
+            // Status color
+            Color statusColor;
+            if (status == 'accepted') {
+              statusColor = AppColors.success;
+            } else if (status == 'rejected') {
+              statusColor = AppColors.error;
+            } else {
+              statusColor = AppColors.gold;
+            }
+
+            return Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceDark,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.borderGold),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.gold.withOpacity(0.05),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // ── Colored left strip ──────────────────────────────
+                      Container(width: 4, color: statusColor),
+
+                      // ── Card content ────────────────────────────────────
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Header row
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      'Appointment ${index + 1}',
+                                      style: GoogleFonts.cormorantGaramond(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: statusColor.withOpacity(0.1),
+                                      border: Border.all(color: statusColor),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Text(
+                                      status.toUpperCase(),
+                                      style: GoogleFonts.jost(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 1.2,
+                                        color: statusColor,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                              child: const Text("Resend Appointment"),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: () async {
-                                try {
-                                  await _deleteAppointment(docId);
-                                } catch (e) {
-                                  if (mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('Error: $e')),
-                                    );
-                                  }
-                                }
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red,
-                                foregroundColor: Colors.white,
+                              const SizedBox(height: 4),
+                              Text(
+                                serviceCenterName,
+                                style: GoogleFonts.jost(
+                                  fontSize: 13,
+                                  color: AppColors.gold,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
-                              child: const Text("Delete"),
-                            ),
+
+                              Container(
+                                height: 1,
+                                margin: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
+                                color: AppColors.borderGold,
+                              ),
+
+                              _infoRow(
+                                Icons.directions_car,
+                                'Model',
+                                appointment['vehicleModel'],
+                              ),
+                              const SizedBox(height: 6),
+                              _infoRow(
+                                Icons.calendar_today,
+                                'Date',
+                                appointment['date']
+                                        ?.toString()
+                                        .split('T')
+                                        .first ??
+                                    '-',
+                              ),
+                              const SizedBox(height: 6),
+                              _infoRow(
+                                Icons.access_time,
+                                'Time',
+                                appointment['time'],
+                              ),
+                              const SizedBox(height: 6),
+                              _infoRow(
+                                Icons.build_outlined,
+                                'Services',
+                                servicesText,
+                              ),
+
+                              const SizedBox(height: 16),
+
+                              // ── Action buttons ──────────────────────────
+                              if (status == 'pending')
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: OutlinedButton.icon(
+                                    onPressed: () async {
+                                      try {
+                                        await _deleteAppointment(docId);
+                                      } catch (e) {
+                                        if (mounted) {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            SnackBar(
+                                              content: Text('Error: $e'),
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    },
+                                    icon: const Icon(
+                                      Icons.cancel_outlined,
+                                      size: 16,
+                                    ),
+                                    label: const Text('Cancel'),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: AppColors.error,
+                                      side: const BorderSide(
+                                        color: AppColors.error,
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              else if (status == 'accepted')
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton.icon(
+                                    onPressed: () async {
+                                      try {
+                                        await _deleteAppointment(docId);
+                                      } catch (e) {
+                                        if (mounted) {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            SnackBar(
+                                              content: Text('Error: $e'),
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    },
+                                    icon: const Icon(
+                                      Icons.check_circle_outline,
+                                      size: 16,
+                                    ),
+                                    label: const Text('Handed Over Vehicle'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColors.gold,
+                                      foregroundColor: AppColors.obsidian,
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
+                                      ),
+                                      elevation: 0,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              else if (status == 'rejected')
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: ElevatedButton.icon(
+                                        onPressed: () async {
+                                          try {
+                                            await _updateAppointmentStatus(
+                                              docId,
+                                              'pending',
+                                            );
+                                          } catch (e) {
+                                            if (mounted) {
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                SnackBar(
+                                                  content: Text('Error: $e'),
+                                                ),
+                                              );
+                                            }
+                                          }
+                                        },
+                                        icon: const Icon(
+                                          Icons.refresh,
+                                          size: 16,
+                                        ),
+                                        label: const Text('Resend'),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: AppColors.gold,
+                                          foregroundColor: AppColors.obsidian,
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 12,
+                                          ),
+                                          elevation: 0,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: OutlinedButton.icon(
+                                        onPressed: () async {
+                                          try {
+                                            await _deleteAppointment(docId);
+                                          } catch (e) {
+                                            if (mounted) {
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                SnackBar(
+                                                  content: Text('Error: $e'),
+                                                ),
+                                              );
+                                            }
+                                          }
+                                        },
+                                        icon: const Icon(
+                                          Icons.delete_outline,
+                                          size: 16,
+                                        ),
+                                        label: const Text('Delete'),
+                                        style: OutlinedButton.styleFrom(
+                                          foregroundColor: AppColors.error,
+                                          side: const BorderSide(
+                                            color: AppColors.error,
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 12,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
                     ],
-                  ],
+                  ),
                 ),
               ),
             );
           },
         );
       },
+    );
+  }
+
+  Widget _infoRow(IconData icon, String label, dynamic value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 14, color: AppColors.gold),
+        const SizedBox(width: 8),
+        Text(
+          '$label: ',
+          style: GoogleFonts.jost(fontSize: 12, color: AppColors.textSecondary),
+        ),
+        Expanded(
+          child: Text(
+            value?.toString() ?? '-',
+            style: GoogleFonts.jost(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

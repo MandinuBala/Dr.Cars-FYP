@@ -7,6 +7,10 @@ import 'package:dr_cars_fyp/service/service_menu.dart';
 import 'package:dr_cars_fyp/auth/signup_selection.dart';
 import 'package:dr_cars_fyp/auth/google_profile_completion.dart';
 import 'package:dr_cars_fyp/admin/dashboard/admin_dashboard_page.dart';
+import 'package:dr_cars_fyp/l10n/app_strings.dart';
+import 'package:dr_cars_fyp/providers/locale_provider.dart';
+import 'package:dr_cars_fyp/theme/app_theme.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -194,167 +198,289 @@ class _SignInScreenState extends State<SignInScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Image.asset('images/bg_removed_logo.png', height: 100),
-                const SizedBox(height: 20),
-                const Text(
-                  "Log in to Dr. Cars",
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                const Text("Enter your email or username to sign in"),
-                const SizedBox(height: 20),
-
-                // Email / Username
-                TextFormField(
-                  controller: _emailOrUsernameController,
-                  validator:
-                      (v) =>
-                          (v == null || v.trim().isEmpty)
-                              ? 'Please enter email or username'
-                              : null,
-                  decoration: InputDecoration(
-                    hintText: "Email or Username",
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    filled: true,
-                    fillColor: Colors.grey[200],
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Password
-                TextFormField(
-                  controller: _passwordController,
-                  obscureText: !_showPassword,
-                  validator:
-                      (v) =>
-                          (v == null || v.isEmpty)
-                              ? 'Password is required'
-                              : null,
-                  decoration: InputDecoration(
-                    hintText: "Password",
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    filled: true,
-                    fillColor: Colors.grey[200],
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _showPassword ? Icons.visibility : Icons.visibility_off,
-                      ),
-                      onPressed:
-                          () => setState(() => _showPassword = !_showPassword),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Sign In Button
-                ElevatedButton(
-                  onPressed: _isLoading ? null : _handleSignIn,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(double.infinity, 50),
-                  ),
-                  child:
-                      _isLoading
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text("Continue"),
-                ),
-                const SizedBox(height: 8),
-
-                // Forgot Password
-                Align(
-                  alignment: Alignment.centerRight,
-                  child:
-                      _isResettingPassword
-                          ? const CircularProgressIndicator(strokeWidth: 2)
-                          : TextButton(
-                            onPressed: _handleResetPassword,
-                            child: const Text("Forgot Password?"),
-                          ),
-                ),
-
-                const SizedBox(height: 20),
-
-                // Divider
-                Row(
+    return ValueListenableBuilder<String>(
+      valueListenable: localeNotifier,
+      builder: (context, lang, _) {
+        return Scaffold(
+          backgroundColor: AppColors.richBlack,
+          body: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 28),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Expanded(child: Divider()),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Text(
-                        "or",
-                        style: TextStyle(color: Colors.grey[600]),
+                    const SizedBox(height: 60),
+
+                    // Logo
+                    Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.gold.withOpacity(0.15),
+                            blurRadius: 30,
+                            spreadRadius: 5,
+                          ),
+                        ],
+                      ),
+                      child: Image.asset(
+                        'images/bg_removed_logo.png',
+                        height: 90,
                       ),
                     ),
-                    const Expanded(child: Divider()),
-                  ],
-                ),
-                const SizedBox(height: 20),
+                    const SizedBox(height: 24),
 
-                // Social Buttons
-                _isSocialLoading
-                    ? const CircularProgressIndicator()
-                    : Column(
+                    // Title
+                    Text(
+                      AppStrings.get('login_title', lang),
+                      style: GoogleFonts.cormorantGaramond(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      AppStrings.get('login_sub', lang),
+                      style: GoogleFonts.jost(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Language Selector
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: AppColors.borderGold),
+                        borderRadius: BorderRadius.circular(12),
+                        color: AppColors.surfaceDark,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.language,
+                            color: AppColors.gold,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 8),
+                          DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: lang,
+                              dropdownColor: AppColors.surfaceElevated,
+                              style: GoogleFonts.jost(
+                                color: AppColors.textPrimary,
+                                fontSize: 14,
+                              ),
+                              items: const [
+                                DropdownMenuItem(
+                                  value: 'en',
+                                  child: Text('🇬🇧  English'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'si',
+                                  child: Text('🇱🇰  සිංහල'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'ta',
+                                  child: Text('🇱🇰  தமிழ்'),
+                                ),
+                              ],
+                              onChanged: (v) {
+                                if (v != null) saveLocale(v);
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Email field
+                    TextFormField(
+                      controller: _emailOrUsernameController,
+                      style: GoogleFonts.jost(color: AppColors.textPrimary),
+                      validator:
+                          (v) =>
+                              (v == null || v.trim().isEmpty)
+                                  ? AppStrings.get('email_username', lang)
+                                  : null,
+                      decoration: InputDecoration(
+                        hintText: AppStrings.get('email_username', lang),
+                        fillColor: AppColors.surfaceElevated,
+                        filled: true,
+                        prefixIcon: const Icon(
+                          Icons.person_outline,
+                          color: AppColors.gold,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Password field
+                    TextFormField(
+                      controller: _passwordController,
+                      obscureText: !_showPassword,
+                      style: GoogleFonts.jost(color: AppColors.textPrimary),
+                      validator:
+                          (v) =>
+                              (v == null || v.isEmpty)
+                                  ? AppStrings.get('password', lang)
+                                  : null,
+                      decoration: InputDecoration(
+                        hintText: AppStrings.get('password', lang),
+                        fillColor: AppColors.surfaceElevated, 
+                        filled: true,
+                        prefixIcon: const Icon(
+                          Icons.lock_outline,
+                          color: AppColors.gold,
+                          size: 20,
+                        ),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _showPassword
+                                ? Icons.visibility
+                                : Icons.visibility_off,
+                            color: AppColors.textSecondary,
+                            size: 20,
+                          ),
+                          onPressed:
+                              () => setState(
+                                () => _showPassword = !_showPassword,
+                              ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Sign In Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _handleSignIn,
+                        child:
+                            _isLoading
+                                ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    color: AppColors.obsidian,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                                : Text(
+                                  AppStrings.get('continue_btn', lang),
+                                  style: GoogleFonts.jost(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 2,
+                                    color: AppColors.obsidian,
+                                  ),
+                                ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Forgot Password
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child:
+                          _isResettingPassword
+                              ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                              : TextButton(
+                                onPressed: _handleResetPassword,
+                                child: Text(
+                                  AppStrings.get('forgot_password', lang),
+                                ),
+                              ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Divider
+                    Row(
                       children: [
-                        // Google Button
-                        OutlinedButton.icon(
-                          onPressed: _handleGoogleSignIn,
-                          icon: const Icon(
-                            Icons.g_mobiledata,
-                            color: Colors.red,
-                            size: 28,
-                          ),
-                          label: const Text("Continue with Google"),
-                          style: OutlinedButton.styleFrom(
-                            minimumSize: const Size(double.infinity, 50),
-                            side: const BorderSide(color: Colors.grey),
+                        const Expanded(child: Divider()),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: Text(
+                            'or',
+                            style: GoogleFonts.jost(
+                              color: AppColors.textMuted,
+                              fontSize: 12,
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 12),
-
-                        // Facebook Button
-                        OutlinedButton.icon(
-                          onPressed: _handleFacebookSignIn,
-                          icon: const Icon(
-                            Icons.facebook,
-                            color: Color(0xFF1877F2),
-                          ),
-                          label: const Text("Continue with Facebook"),
-                          style: OutlinedButton.styleFrom(
-                            minimumSize: const Size(double.infinity, 50),
-                            side: const BorderSide(color: Colors.grey),
-                          ),
-                        ),
+                        const Expanded(child: Divider()),
                       ],
                     ),
+                    const SizedBox(height: 16),
 
-                const SizedBox(height: 20),
-                TextButton(
-                  onPressed:
-                      () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => SignupSelection()),
-                      ),
-                  child: const Text("Create an account"),
+                    // Social Buttons
+                    _isSocialLoading
+                        ? const CircularProgressIndicator(color: AppColors.gold)
+                        : Column(
+                          children: [
+                            OutlinedButton.icon(
+                              onPressed: _handleGoogleSignIn,
+                              icon: const Icon(
+                                Icons.g_mobiledata,
+                                color: Colors.red,
+                                size: 28,
+                              ),
+                              label: Text(
+                                AppStrings.get('google_signin', lang),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            OutlinedButton.icon(
+                              onPressed: _handleFacebookSignIn,
+                              icon: const Icon(
+                                Icons.facebook,
+                                color: Color(0xFF1877F2),
+                              ),
+                              label: Text(
+                                AppStrings.get('facebook_signin', lang),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                    const SizedBox(height: 20),
+                    TextButton(
+                      onPressed:
+                          () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => SignupSelection(),
+                            ),
+                          ),
+                      child: Text(AppStrings.get('create_account', lang)),
+                    ),
+                    const SizedBox(height: 32),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

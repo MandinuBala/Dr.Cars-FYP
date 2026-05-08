@@ -1,9 +1,13 @@
+// lib/recipt_notification/recipt_notification_page.dart
 import 'dart:async';
 import 'dart:convert';
-
 import 'package:dr_cars_fyp/auth/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:dr_cars_fyp/l10n/app_strings.dart';
+import 'package:dr_cars_fyp/providers/locale_provider.dart';
+import 'package:dr_cars_fyp/theme/app_theme.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 bool _isRefreshing = false;
 
@@ -44,6 +48,7 @@ class _ReceiptNotificationPageState extends State<ReceiptNotificationPage> {
     await _loadReceipts();
   }
 
+  // ── Badge tab builder ─────────────────────────────────────────────────────
   Tab _buildTabWithBadge(String label, int count) {
     return Tab(
       child: Row(
@@ -55,13 +60,13 @@ class _ReceiptNotificationPageState extends State<ReceiptNotificationPage> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: Colors.red,
+                color: AppColors.error,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 '$count',
-                style: const TextStyle(
-                  fontSize: 12,
+                style: GoogleFonts.jost(
+                  fontSize: 11,
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
@@ -125,20 +130,18 @@ class _ReceiptNotificationPageState extends State<ReceiptNotificationPage> {
           });
         }
       } else {
-        if (mounted) {
+        if (mounted)
           setState(() {
             _receipts = [];
             _isLoading = false;
           });
-        }
       }
     } catch (_) {
-      if (mounted) {
+      if (mounted)
         setState(() {
           _receipts = [];
           _isLoading = false;
         });
-      }
     }
   }
 
@@ -155,17 +158,14 @@ class _ReceiptNotificationPageState extends State<ReceiptNotificationPage> {
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'status': status}),
     );
-
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw Exception('Failed to update receipt');
     }
-
     await _loadReceipts();
   }
 
-  List<Map<String, dynamic>> _receiptsByStatus(String status) {
-    return _receipts.where((r) => r['status'] == status).toList();
-  }
+  List<Map<String, dynamic>> _receiptsByStatus(String status) =>
+      _receipts.where((r) => r['status'] == status).toList();
 
   Map<String, int> _statusCounts() {
     final counts = {
@@ -174,14 +174,10 @@ class _ReceiptNotificationPageState extends State<ReceiptNotificationPage> {
       'rejected': 0,
       'finished': 0,
     };
-
     for (final receipt in _receipts) {
       final String status = (receipt['status'] ?? '').toString();
-      if (counts.containsKey(status)) {
-        counts[status] = counts[status]! + 1;
-      }
+      if (counts.containsKey(status)) counts[status] = counts[status]! + 1;
     }
-
     return counts;
   }
 
@@ -198,54 +194,104 @@ class _ReceiptNotificationPageState extends State<ReceiptNotificationPage> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return Scaffold(
+        backgroundColor: AppColors.richBlack,
+        body: const Center(
+          child: CircularProgressIndicator(color: AppColors.gold),
+        ),
+      );
     }
 
-    final counts = _statusCounts();
+    return ValueListenableBuilder<String>(
+      valueListenable: localeNotifier,
+      builder: (context, lang, _) {
+        final counts = _statusCounts();
 
-    return DefaultTabController(
-      length: 4,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text("Receipt Notifications"),
-          backgroundColor: Colors.black,
-          foregroundColor: Colors.white,
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(kToolbarHeight),
-            child: TabBar(
-              isScrollable: true,
-              labelColor: Colors.amber,
-              unselectedLabelColor: Colors.white70,
-              indicatorColor: Colors.amber,
-              tabs: [
-                _buildTabWithBadge("Pending", counts['not confirmed']!),
-                _buildTabWithBadge("Confirmed", counts['confirmed']!),
-                _buildTabWithBadge("Rejected", counts['rejected']!),
-                _buildTabWithBadge("Finished", counts['finished']!),
+        return DefaultTabController(
+          length: 4,
+          child: Scaffold(
+            backgroundColor: AppColors.richBlack,
+            appBar: AppBar(
+              backgroundColor: AppColors.obsidian,
+              foregroundColor: AppColors.textPrimary,
+              title: Text(
+                AppStrings.get('receipt_notifications', lang),
+                style: GoogleFonts.cormorantGaramond(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              bottom: PreferredSize(
+                preferredSize: const Size.fromHeight(kToolbarHeight),
+                child: TabBar(
+                  isScrollable: true,
+                  labelColor: AppColors.gold,
+                  unselectedLabelColor: AppColors.textMuted,
+                  indicatorColor: AppColors.gold,
+                  indicatorWeight: 2,
+                  labelStyle: GoogleFonts.jost(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                  unselectedLabelStyle: GoogleFonts.jost(fontSize: 13),
+                  tabs: [
+                    _buildTabWithBadge(
+                      AppStrings.get('pending', lang),
+                      counts['not confirmed']!,
+                    ),
+                    _buildTabWithBadge(
+                      AppStrings.get('confirmed', lang),
+                      counts['confirmed']!,
+                    ),
+                    _buildTabWithBadge(
+                      AppStrings.get('rejected', lang),
+                      counts['rejected']!,
+                    ),
+                    _buildTabWithBadge(
+                      AppStrings.get('finished', lang),
+                      counts['finished']!,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            body: TabBarView(
+              children: [
+                _buildReceiptList('not confirmed', true, lang),
+                _buildReceiptList('confirmed', false, lang),
+                _buildReceiptList('rejected', false, lang),
+                _buildReceiptList('finished', false, lang),
               ],
             ),
           ),
-        ),
-        body: TabBarView(
-          children: [
-            _buildReceiptList("not confirmed", true),
-            _buildReceiptList("confirmed", false),
-            _buildReceiptList("rejected", false),
-            _buildReceiptList("finished", false),
-          ],
-        ),
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildReceiptList(String status, bool showActions) {
+  Widget _buildReceiptList(String status, bool showActions, String lang) {
     final receipts = _receiptsByStatus(status);
 
     if (receipts.isEmpty) {
-      return Center(child: Text("No $status receipts found."));
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.receipt_long, size: 48, color: AppColors.textMuted),
+            const SizedBox(height: 12),
+            Text(
+              AppStrings.get('no_records', lang),
+              style: GoogleFonts.jost(color: AppColors.textMuted, fontSize: 14),
+            ),
+          ],
+        ),
+      );
     }
 
     return ListView.builder(
+      padding: const EdgeInsets.all(16),
       itemCount: receipts.length,
       itemBuilder: (context, index) {
         final receipt = receipts[index];
@@ -256,165 +302,313 @@ class _ReceiptNotificationPageState extends State<ReceiptNotificationPage> {
             ) ??
             {};
 
-        return Card(
-          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: ExpansionTile(
-            title: Text(
-              "Receipt ${index + 1}: ${receipt['Service Center Name'] ?? '-'}",
+        return Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceDark,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.borderGold),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.gold.withOpacity(0.05),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Theme(
+            data: Theme.of(context).copyWith(
+              dividerColor: Colors.transparent,
+              expansionTileTheme: const ExpansionTileThemeData(
+                backgroundColor: AppColors.surfaceDark,
+                collapsedBackgroundColor: AppColors.surfaceDark,
+              ),
             ),
-            subtitle: Text("Mileage: ${receipt['currentMileage']}"),
-            children: [
-              ListTile(
-                title: const Text("Previous Oil Change"),
-                subtitle: Text(receipt['previousOilChange']?.toString() ?? '-'),
+            child: ExpansionTile(
+              tilePadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 4,
               ),
-              ListTile(
-                title: const Text("Next Service Date"),
-                subtitle: Text(receipt['nextServiceDate']?.toString() ?? '-'),
-              ),
-              const Padding(
-                padding: EdgeInsets.all(8.0),
-                child: Text(
-                  "Services:",
-                  style: TextStyle(fontWeight: FontWeight.bold),
+              title: Text(
+                '${AppStrings.get('service_records', lang)} ${index + 1}: ${receipt['Service Center Name'] ?? '-'}',
+                style: GoogleFonts.jost(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                  color: AppColors.textPrimary,
                 ),
               ),
-              ...services.entries
-                  .map(
-                    (entry) => ListTile(
-                      title: Text(entry.key),
-                      trailing: Text("Rs. ${entry.value}"),
-                    ),
-                  )
-                  .toList(),
-
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16.0,
-                  vertical: 8,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    const Text(
-                      "Total: ",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    Text(
-                      "Rs. ${_calculateTotal(Map<String, dynamic>.from(services))}",
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green,
-                      ),
-                    ),
-                  ],
+              subtitle: Text(
+                '${AppStrings.get('current_mileage', lang)}: ${receipt['currentMileage']}',
+                style: GoogleFonts.jost(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
                 ),
               ),
-              if (showActions)
+              iconColor: AppColors.gold,
+              collapsedIconColor: AppColors.textSecondary,
+              children: [
+                // Gold divider
+                Container(height: 1, color: AppColors.borderGold),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      ElevatedButton(
-                        onPressed: () async {
-                          try {
-                            await _updateStatus(receiptId, "confirmed");
-                          } catch (e) {
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Error: $e')),
-                              );
-                            }
-                            return;
-                          }
-
-                          if (mounted) {
-                            Future.microtask(() {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("Receipt confirmed."),
-                                ),
-                              );
-                            });
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black,
-                          foregroundColor: Colors.white,
-                        ),
-                        child: const Text("Confirm"),
+                      _infoRow(
+                        AppStrings.get('previous_oil_change', lang),
+                        receipt['previousOilChange']?.toString() ?? '-',
                       ),
-                      ElevatedButton(
-                        onPressed: () async {
-                          try {
-                            await _updateStatus(receiptId, "rejected");
-                          } catch (e) {
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Error: $e')),
-                              );
-                            }
-                            return;
-                          }
-
-                          if (mounted) {
-                            Future.microtask(() {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("Receipt rejected."),
-                                ),
-                              );
-                            });
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          foregroundColor: Colors.white,
-                        ),
-                        child: const Text("Reject"),
+                      const SizedBox(height: 8),
+                      _infoRow(
+                        AppStrings.get('next_service_date', lang),
+                        receipt['nextServiceDate']?.toString() ?? '-',
                       ),
+                      const SizedBox(height: 16),
+
+                      // Services label
+                      luxuryLabel(AppStrings.get('services', lang)),
+                      const SizedBox(height: 8),
+
+                      ...services.entries.map(
+                        (entry) => Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                entry.key,
+                                style: GoogleFonts.jost(
+                                  fontSize: 13,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                              Text(
+                                'Rs. ${entry.value}',
+                                style: GoogleFonts.jost(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // Total row
+                      Container(
+                        margin: const EdgeInsets.only(top: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.gold.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: AppColors.gold.withOpacity(0.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              AppStrings.get('total', lang).toUpperCase(),
+                              style: GoogleFonts.jost(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 1.5,
+                                color: AppColors.gold,
+                              ),
+                            ),
+                            Text(
+                              'Rs. ${_calculateTotal(Map<String, dynamic>.from(services))}',
+                              style: GoogleFonts.cormorantGaramond(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.gold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Action buttons
+                      if (showActions)
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: () async {
+                                  try {
+                                    await _updateStatus(receiptId, 'confirmed');
+                                  } catch (e) {
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(content: Text('Error: $e')),
+                                      );
+                                    }
+                                    return;
+                                  }
+                                  if (mounted) {
+                                    Future.microtask(() {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Receipt confirmed.'),
+                                        ),
+                                      );
+                                    });
+                                  }
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.gold,
+                                  foregroundColor: AppColors.obsidian,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  elevation: 0,
+                                ),
+                                child: Text(
+                                  AppStrings.get('confirm', lang),
+                                  style: GoogleFonts.jost(
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 1.2,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: () async {
+                                  try {
+                                    await _updateStatus(receiptId, 'rejected');
+                                  } catch (e) {
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(content: Text('Error: $e')),
+                                      );
+                                    }
+                                    return;
+                                  }
+                                  if (mounted) {
+                                    Future.microtask(() {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Receipt rejected.'),
+                                        ),
+                                      );
+                                    });
+                                  }
+                                },
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppColors.error,
+                                  side: const BorderSide(
+                                    color: AppColors.error,
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                child: Text(
+                                  AppStrings.get('reject', lang),
+                                  style: GoogleFonts.jost(
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 1.2,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        )
+                      else if (status == 'finished')
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () async {
+                              try {
+                                await _updateStatus(receiptId, 'done');
+                              } catch (e) {
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Error: $e')),
+                                  );
+                                }
+                                return;
+                              }
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Marked as done.'),
+                                  ),
+                                );
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.gold,
+                              foregroundColor: AppColors.obsidian,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              elevation: 0,
+                            ),
+                            child: Text(
+                              AppStrings.get('done', lang),
+                              style: GoogleFonts.jost(
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 1.2,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ),
                     ],
                   ),
-                )
-              else if (status == "finished")
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      try {
-                        await _updateStatus(receiptId, "done");
-                      } catch (e) {
-                        if (mounted) {
-                          ScaffoldMessenger.of(
-                            context,
-                          ).showSnackBar(SnackBar(content: Text('Error: $e')));
-                        }
-                        return;
-                      }
-
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Marked as done.")),
-                        );
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black,
-                      foregroundColor: Colors.white,
-                    ),
-                    child: const Text("Done"),
-                  ),
                 ),
-              const SizedBox(height: 8),
-            ],
+              ],
+            ),
           ),
         );
       },
+    );
+  }
+
+  Widget _infoRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.jost(fontSize: 12, color: AppColors.textSecondary),
+        ),
+        Text(
+          value,
+          style: GoogleFonts.jost(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+      ],
     );
   }
 }

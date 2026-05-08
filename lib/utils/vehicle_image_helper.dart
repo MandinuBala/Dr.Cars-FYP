@@ -4,10 +4,11 @@ class VehicleImageHelper {
   static const Map<String, String> _vehicleImages = {
     // Toyota
     'toyota_corolla': 'images/vehicles/toyota_corolla.jpg',
-    'toyota_camry': 'images/vehicles/toyota_camry.jpg', // fixed typo
+    'toyota_camry': 'images/vehicles/toyota_camry.jpg', 
     'toyota_rav4': 'images/vehicles/toyota_rav4.jpg',
     'toyota_aqua': 'images/vehicles/toyota_aqua.jpg',
     'toyota_prius': 'images/vehicles/toyota_prius.jpg',
+    'toyota_fortuner': 'images/vehicles/toyota_fortuner.jpg',
     // Nissan
     'nissan_sunny': 'images/vehicles/nissan_sunny.jpg',
     'nissan_x-trail': 'images/vehicles/nissan_x-trail.jpg',
@@ -29,6 +30,7 @@ class VehicleImageHelper {
     'bmw_x1': 'images/vehicles/bmw_x1.jpg',
     'bmw_x5': 'images/vehicles/bmw_x5.jpg',
     'bmw_740i': 'images/vehicles/bmw_740i.jpg',
+    'bmw_Z4': 'images/vehicles/bmw_z4.jpg',
     // Kia
     'kia_picanto': 'images/vehicles/kia_picanto.jpg',
     'kia_sportage': 'images/vehicles/kia_sportage.jpg',

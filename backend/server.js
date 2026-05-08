@@ -16,9 +16,12 @@ require("dotenv").config();
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use('/models', express.static('public/models')); // 3d model static files
+app.use('/models', (req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  next();
+}, express.static('public/models')); // 3d model static files
 
-// CONNECT TO MONGODB
+// CONNECT TO MONGODBser
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB Connected"))
   .catch(err => console.log("MongoDB connection error:", err));

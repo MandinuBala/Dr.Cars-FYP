@@ -1,9 +1,12 @@
+// lib/appointments/appointments_screen.dart
 import 'dart:async';
 import 'dart:convert';
 
 import 'package:dr_cars_fyp/auth/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:dr_cars_fyp/theme/app_theme.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AppointmentsScreen extends StatefulWidget {
   const AppointmentsScreen({super.key});
@@ -19,7 +22,6 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
   String? serviceCenterUid;
   DateTime? selectedDate;
 
-  // Separate lists per tab
   List<Map<String, dynamic>> _pendingAppointments = [];
   List<Map<String, dynamic>> _acceptedAppointments = [];
   List<Map<String, dynamic>> _rejectedAppointments = [];
@@ -33,7 +35,6 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _initialize();
-    // Poll every 15 seconds to catch new appointments
     _pollingTimer = Timer.periodic(const Duration(seconds: 15), (_) {
       _fetchAllSilently();
     });
@@ -69,15 +70,12 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
       if (mounted) setState(() => _isLoading = false);
       return;
     }
-
     setState(() => _isLoading = true);
-
     await Future.wait([
       _fetchByStatus('pending'),
       _fetchByStatus('accepted'),
       _fetchByStatus('rejected'),
     ]);
-
     if (mounted) setState(() => _isLoading = false);
   }
 
@@ -108,7 +106,6 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                 .map((item) => Map<String, dynamic>.from(item as Map))
                 .toList();
 
-        // Sort by date ascending
         fetched.sort((a, b) {
           final aDate = _parseDateTime(a['date'] ?? a['createdAt']);
           final bDate = _parseDateTime(b['date'] ?? b['createdAt']);
@@ -123,9 +120,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
           });
         }
       }
-    } catch (_) {
-      // Silent fail — keep existing list
-    }
+    } catch (_) {}
   }
 
   DateTime _parseDateTime(dynamic value) {
@@ -148,17 +143,18 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
       );
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
-        await _fetchAll(); // Refresh all tabs
+        await _fetchAll();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
+              backgroundColor:
+                  newStatus == 'accepted' ? AppColors.success : AppColors.error,
               content: Text(
                 newStatus == 'accepted'
-                    ? "✅ Appointment accepted."
-                    : "❌ Appointment rejected.",
+                    ? '✅ Appointment accepted.'
+                    : '❌ Appointment rejected.',
+                style: GoogleFonts.jost(color: Colors.white),
               ),
-              backgroundColor:
-                  newStatus == 'accepted' ? Colors.green : Colors.red,
             ),
           );
         }
@@ -191,62 +187,122 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
     }).toList();
   }
 
+  // ── Tab with badge ────────────────────────────────────────────────────────
+  Widget _tabLabel(String label, int count, Color badgeColor) {
+    return Tab(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(label),
+          if (count > 0) ...[
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: badgeColor,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                '$count',
+                style: GoogleFonts.jost(
+                  fontSize: 11,
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.richBlack,
       appBar: AppBar(
-        title: const Text(
-          "Appointments",
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.obsidian,
+        foregroundColor: AppColors.textPrimary,
         centerTitle: true,
+        title: Text(
+          'Appointments',
+          style: GoogleFonts.cormorantGaramond(
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+            letterSpacing: 0.5,
+          ),
+        ),
         actions: [
-          // Date filter
           IconButton(
-            icon: const Icon(Icons.calendar_today),
-            tooltip: "Filter by date",
+            icon: const Icon(Icons.calendar_today, color: AppColors.gold),
+            tooltip: 'Filter by date',
             onPressed: () async {
               final picked = await showDatePicker(
                 context: context,
                 initialDate: selectedDate ?? DateTime.now(),
                 firstDate: DateTime(2020),
                 lastDate: DateTime(2030),
+                builder:
+                    (context, child) => Theme(
+                      data: Theme.of(context).copyWith(
+                        colorScheme: const ColorScheme.dark(
+                          primary: AppColors.gold,
+                          onPrimary: AppColors.obsidian,
+                          surface: AppColors.surfaceDark,
+                          onSurface: AppColors.textPrimary,
+                        ),
+                      ),
+                      child: child!,
+                    ),
               );
-              if (picked != null) {
-                setState(() => selectedDate = picked);
-              }
+              if (picked != null) setState(() => selectedDate = picked);
             },
           ),
           if (selectedDate != null)
             IconButton(
-              icon: const Icon(Icons.clear),
-              tooltip: "Clear date filter",
+              icon: const Icon(Icons.clear, color: AppColors.gold),
+              tooltip: 'Clear date filter',
               onPressed: () => setState(() => selectedDate = null),
             ),
-          // Manual refresh
           IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: "Refresh",
+            icon: const Icon(Icons.refresh, color: AppColors.gold),
+            tooltip: 'Refresh',
             onPressed: _fetchAll,
           ),
         ],
         bottom: TabBar(
           controller: _tabController,
-          labelColor: Colors.amber,
-          unselectedLabelColor: Colors.white70,
-          indicatorColor: Colors.amber,
+          labelColor: AppColors.gold,
+          unselectedLabelColor: AppColors.textMuted,
+          indicatorColor: AppColors.gold,
+          indicatorWeight: 2,
+          labelStyle: GoogleFonts.jost(
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
+          ),
+          unselectedLabelStyle: GoogleFonts.jost(fontSize: 13),
           tabs: [
-            _tabLabel("Pending", _pendingAppointments.length),
-            _tabLabel("Accepted", _acceptedAppointments.length),
-            _tabLabel("Rejected", _rejectedAppointments.length),
+            _tabLabel('Pending', _pendingAppointments.length, AppColors.gold),
+            _tabLabel(
+              'Accepted',
+              _acceptedAppointments.length,
+              AppColors.success,
+            ),
+            _tabLabel(
+              'Rejected',
+              _rejectedAppointments.length,
+              AppColors.error,
+            ),
           ],
         ),
       ),
       body:
           _isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? const Center(
+                child: CircularProgressIndicator(color: AppColors.gold),
+              )
               : TabBarView(
                 controller: _tabController,
                 children: [
@@ -267,40 +323,6 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
     );
   }
 
-  Widget _tabLabel(String label, int count) {
-    return Tab(
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(label),
-          if (count > 0) ...[
-            const SizedBox(width: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color:
-                    label == 'Pending'
-                        ? Colors.amber
-                        : label == 'Accepted'
-                        ? Colors.green
-                        : Colors.red,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                '$count',
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
   Widget _buildAppointmentList(
     List<Map<String, dynamic>> appointments,
     String status,
@@ -316,20 +338,30 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                   : status == 'accepted'
                   ? Icons.check_circle_outline
                   : Icons.cancel_outlined,
-              size: 60,
-              color: Colors.grey,
+              size: 48,
+              color: AppColors.textMuted,
             ),
             const SizedBox(height: 12),
             Text(
-              "No $status appointments${selectedDate != null ? ' on this date' : ''}.",
-              style: const TextStyle(color: Colors.grey),
+              'No $status appointments${selectedDate != null ? ' on this date' : ''}.',
+              style: GoogleFonts.jost(color: AppColors.textMuted, fontSize: 14),
             ),
           ],
         ),
       );
     }
 
+    // Status color
+    Color statusColor;
+    if (status == 'accepted')
+      statusColor = AppColors.success;
+    else if (status == 'rejected')
+      statusColor = AppColors.error;
+    else
+      statusColor = AppColors.gold;
+
     return RefreshIndicator(
+      color: AppColors.gold,
       onRefresh: _fetchAll,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
@@ -343,130 +375,220 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                   ? serviceTypes.map((item) => item.toString()).join(', ')
                   : '-';
 
-          return Card(
-            elevation: 4,
-            margin: const EdgeInsets.symmetric(vertical: 8),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+          return Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceDark,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.borderGold),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.gold.withOpacity(0.05),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header row
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        data['vehicleNumber'] ?? '-',
-                        style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      _statusBadge(status),
-                    ],
-                  ),
-                  const Divider(height: 16),
-
-                  _infoRow(Icons.directions_car, "Model", data['vehicleModel']),
-                  _infoRow(
-                    Icons.calendar_today,
-                    "Date",
-                    _formatDate(data['date']),
-                  ),
-                  _infoRow(Icons.access_time, "Time", data['time']),
-                  _infoRow(Icons.phone, "Contact", data['Contact']),
-                  _infoRow(Icons.build, "Services", serviceTypesText),
-
-                  const SizedBox(height: 12),
-
-                  // Action buttons based on status
-                  if (status == 'pending')
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed:
-                                appointmentId.isEmpty
-                                    ? null
-                                    : () => _updateStatus(
-                                      appointmentId,
-                                      'accepted',
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Container(width: 4, color: statusColor),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Header
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  data['vehicleNumber'] ?? '-',
+                                  style: GoogleFonts.cormorantGaramond(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: statusColor.withOpacity(0.1),
+                                    border: Border.all(color: statusColor),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    status.toUpperCase(),
+                                    style: GoogleFonts.jost(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 1.2,
+                                      color: statusColor,
                                     ),
-                            icon: const Icon(Icons.check),
-                            label: const Text("Accept"),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.black,
-                              foregroundColor: Colors.white,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed:
-                                appointmentId.isEmpty
-                                    ? null
-                                    : () => _updateStatus(
-                                      appointmentId,
-                                      'rejected',
+
+                            Container(
+                              height: 1,
+                              margin: const EdgeInsets.symmetric(vertical: 12),
+                              color: AppColors.borderGold,
+                            ),
+
+                            _infoRow(
+                              Icons.directions_car,
+                              'Model',
+                              data['vehicleModel'],
+                            ),
+                            const SizedBox(height: 6),
+                            _infoRow(
+                              Icons.calendar_today,
+                              'Date',
+                              _formatDate(data['date']),
+                            ),
+                            const SizedBox(height: 6),
+                            _infoRow(Icons.access_time, 'Time', data['time']),
+                            const SizedBox(height: 6),
+                            _infoRow(Icons.phone, 'Contact', data['Contact']),
+                            const SizedBox(height: 6),
+                            _infoRow(
+                              Icons.build_outlined,
+                              'Services',
+                              serviceTypesText,
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            // Action buttons
+                            if (status == 'pending')
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: ElevatedButton.icon(
+                                      onPressed:
+                                          appointmentId.isEmpty
+                                              ? null
+                                              : () => _updateStatus(
+                                                appointmentId,
+                                                'accepted',
+                                              ),
+                                      icon: const Icon(Icons.check, size: 16),
+                                      label: const Text('Accept'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: AppColors.gold,
+                                        foregroundColor: AppColors.obsidian,
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 12,
+                                        ),
+                                        elevation: 0,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                        ),
+                                      ),
                                     ),
-                            icon: const Icon(Icons.close),
-                            label: const Text("Reject"),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red,
-                              foregroundColor: Colors.white,
-                            ),
-                          ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: OutlinedButton.icon(
+                                      onPressed:
+                                          appointmentId.isEmpty
+                                              ? null
+                                              : () => _updateStatus(
+                                                appointmentId,
+                                                'rejected',
+                                              ),
+                                      icon: const Icon(Icons.close, size: 16),
+                                      label: const Text('Reject'),
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: AppColors.error,
+                                        side: const BorderSide(
+                                          color: AppColors.error,
+                                        ),
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 12,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              )
+                            else if (status == 'accepted')
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: AppColors.success.withOpacity(0.08),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: AppColors.success.withOpacity(0.3),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.info_outline,
+                                      color: AppColors.success,
+                                      size: 16,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Customer has been notified.',
+                                      style: GoogleFonts.jost(
+                                        color: AppColors.success,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            else if (status == 'rejected')
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: AppColors.error.withOpacity(0.08),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: AppColors.error.withOpacity(0.3),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.info_outline,
+                                      color: AppColors.error,
+                                      size: 16,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Customer has been notified of rejection.',
+                                      style: GoogleFonts.jost(
+                                        color: AppColors.error,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
                         ),
-                      ],
-                    )
-                  else if (status == 'accepted')
-                    // Info only — no more actions needed
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.green[50],
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.green.shade200),
-                      ),
-                      child: const Row(
-                        children: [
-                          Icon(
-                            Icons.info_outline,
-                            color: Colors.green,
-                            size: 16,
-                          ),
-                          SizedBox(width: 8),
-                          Text(
-                            "Customer has been notified.",
-                            style: TextStyle(color: Colors.green, fontSize: 13),
-                          ),
-                        ],
-                      ),
-                    )
-                  else if (status == 'rejected')
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.red[50],
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.red.shade200),
-                      ),
-                      child: const Row(
-                        children: [
-                          Icon(Icons.info_outline, color: Colors.red, size: 16),
-                          SizedBox(width: 8),
-                          Text(
-                            "Customer has been notified of rejection.",
-                            style: TextStyle(color: Colors.red, fontSize: 13),
-                          ),
-                        ],
                       ),
                     ),
-                ],
+                  ],
+                ),
               ),
             ),
           );
@@ -475,57 +597,27 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
     );
   }
 
-  Widget _statusBadge(String status) {
-    Color color;
-    String label;
-    if (status == 'accepted') {
-      color = Colors.green;
-      label = "Accepted";
-    } else if (status == 'rejected') {
-      color = Colors.red;
-      label = "Rejected";
-    } else {
-      color = Colors.orange;
-      label = "Pending";
-    }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        border: Border.all(color: color),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontWeight: FontWeight.bold,
-          fontSize: 12,
-        ),
-      ),
-    );
-  }
-
   Widget _infoRow(IconData icon, String label, dynamic value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 16, color: Colors.grey),
-          const SizedBox(width: 8),
-          Text(
-            "$label: ",
-            style: const TextStyle(color: Colors.grey, fontSize: 13),
-          ),
-          Expanded(
-            child: Text(
-              value?.toString() ?? '-',
-              style: const TextStyle(fontSize: 13),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 14, color: AppColors.gold),
+        const SizedBox(width: 8),
+        Text(
+          '$label: ',
+          style: GoogleFonts.jost(fontSize: 12, color: AppColors.textSecondary),
+        ),
+        Expanded(
+          child: Text(
+            value?.toString() ?? '-',
+            style: GoogleFonts.jost(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

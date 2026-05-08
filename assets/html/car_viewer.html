@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
-body { background:#0a0a1a; overflow:hidden; width:100vw; height:100vh; }
+body { background:#0d0d0d; overflow:hidden; width:100vw; height:100vh; }
 canvas { display:block; }
 #badge {
   position:fixed; top:12px; left:50%; transform:translateX(-50%);
@@ -32,7 +32,7 @@ canvas { display:block; }
 }
 .sw.on { border-color:#fff; transform:scale(1.15); }
 #loading {
-  position:fixed; inset:0; background:#0a0a1a;
+  position:fixed; inset:0; background:#0d0d0d;
   display:flex; flex-direction:column; align-items:center;
   justify-content:center; gap:14px; z-index:99;
 }
@@ -46,6 +46,7 @@ canvas { display:block; }
 </style>
 </head>
 <body>
+
 <div id="loading"><div id="ring"></div><div id="ltxt">LOADING</div></div>
 <div id="badge">VEHICLE</div>
 <div id="hint">DRAG TO ROTATE · PINCH TO ZOOM</div>
@@ -58,86 +59,106 @@ canvas { display:block; }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/meshoptimizer@0.18.1/meshopt_decoder.js"></script>
+
 <script>
-var brand   = window.BRAND    || 'BMW';
-var model   = window.MODEL    || 'Z4';
-var baseUrl = window.BASE_URL || 'http://192.168.1.21:5000';
+// ── DEFAULT VALUES (overridden by Flutter via initViewer) ──
+var brand   = 'BMW';
+var modelName = 'Z4';
+var baseUrl = 'http://192.168.1.21:5000';
 
+// Set badge on startup
 document.getElementById('badge').textContent =
-  brand.toUpperCase() + ' \u00B7 ' + model.toUpperCase();
+  brand.toUpperCase() + ' \u00B7 ' + modelName.toUpperCase();
 
-// SCENE
+// ── RENDERER ──
 var W = window.innerWidth, H = window.innerHeight;
-var renderer = new THREE.WebGLRenderer({ antialias: false }); // antialias OFF = faster
+var renderer = new THREE.WebGLRenderer({ antialias: false });
 renderer.setSize(W, H);
-renderer.setPixelRatio(1); // force 1x pixel ratio = faster on old phones
-renderer.shadowMap.enabled = false; // shadows OFF = faster
+renderer.setPixelRatio(1);
+renderer.shadowMap.enabled = false;
 document.body.appendChild(renderer.domElement);
 
+// ── SCENE ──
 var scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0a0a1a);
+scene.background = new THREE.Color(0x0d0d0d);
+scene.fog = new THREE.Fog(0x0d0d0d, 18, 35);
 
-var camera = new THREE.PerspectiveCamera(45, W/H, 0.1, 100);
-camera.position.set(5, 2, 6);
+// ── CAMERA — must be defined BEFORE controls and animate() ──
+var camera = new THREE.PerspectiveCamera(45, W / H, 0.1, 100);
+camera.position.set(0, 2, 8);
 
-// CONTROLS
+// ── CONTROLS — must be defined BEFORE animate() is called ──
 var controls = new THREE.OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
-controls.dampingFactor = 0.1;
-controls.minDistance = 2;
-controls.maxDistance = 15;
-controls.maxPolarAngle = Math.PI / 2.1;
-controls.autoRotate = true;
-controls.autoRotateSpeed = 1.2;
+controls.enableDamping  = true;
+controls.dampingFactor  = 0.08;
+controls.minDistance    = 3;
+controls.maxDistance    = 15;
+controls.maxPolarAngle  = Math.PI / 2;
+controls.autoRotate     = true;
+controls.autoRotateSpeed = 1.5;
 controls.target.set(0, 0.5, 0);
+controls.update();
 
-// LIGHTS - keep simple for old phones
-scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-var dir = new THREE.DirectionalLight(0xffffff, 1.2);
-dir.position.set(5, 10, 5);
-scene.add(dir);
-var dir2 = new THREE.DirectionalLight(0x8899ff, 0.4);
-dir2.position.set(-5, 3, -5);
-scene.add(dir2);
+// ── LIGHTING ──
+scene.add(new THREE.AmbientLight(0xffffff, 0.3));
+scene.add(new THREE.HemisphereLight(0xddeeff, 0x111111, 0.7));
 
-// GROUND
+var keyLight = new THREE.DirectionalLight(0xffffff, 2.8);
+keyLight.position.set(6, 10, 6);
+scene.add(keyLight);
+
+var fillLight = new THREE.DirectionalLight(0x9bbeff, 1.0);
+fillLight.position.set(-6, 4, 4);
+scene.add(fillLight);
+
+var rimLight = new THREE.DirectionalLight(0xffffff, 1.5);
+rimLight.position.set(0, 6, -10);
+scene.add(rimLight);
+
+var underLight = new THREE.DirectionalLight(0x334466, 0.25);
+underLight.position.set(0, -5, 0);
+scene.add(underLight);
+
+// ── STUDIO FLOOR ──
 var ground = new THREE.Mesh(
-  new THREE.CircleGeometry(8, 32),
-  new THREE.MeshLambertMaterial({ color: 0x111122 }) // Lambert = faster than Standard
+  new THREE.CircleGeometry(12, 64),
+  new THREE.MeshLambertMaterial({ color: 0x111111, emissive: 0x0a0a0a })
 );
-ground.rotation.x = -Math.PI/2;
+ground.rotation.x = -Math.PI / 2;
 ground.position.y = -0.01;
 scene.add(ground);
-scene.add(new THREE.GridHelper(16, 20, 0x223355, 0x112244));
+scene.add(new THREE.GridHelper(24, 30, 0x2a2a2a, 0x1a1a1a));
 
-// COLORS
+// ── COLOR SWATCHES ──
 var COLORS = [
-  { name:'Original',     css:'#888', hex: null },
-  { name:'White',        css:'#f5f5f0', hex: 0xf5f5f0 },
-  { name:'Black',        css:'#111111', hex: 0x111111 },
-  { name:'Red',          css:'#cc1a1a', hex: 0xcc1a1a },
-  { name:'Blue',         css:'#1e4d8c', hex: 0x1e4d8c },
-  { name:'Grey',         css:'#556070', hex: 0x556070 },
-  { name:'Green',        css:'#1a5c2a', hex: 0x1a5c2a },
-  { name:'Orange',       css:'#e05a00', hex: 0xe05a00 },
+  { name: 'Original', css: '#888',    hex: null     },
+  { name: 'White',    css: '#f5f5f0', hex: 0xf5f5f0 },
+  { name: 'Black',    css: '#111111', hex: 0x111111  },
+  { name: 'Red',      css: '#cc1a1a', hex: 0xcc1a1a  },
+  { name: 'Blue',     css: '#1e4d8c', hex: 0x1e4d8c  },
+  { name: 'Grey',     css: '#556070', hex: 0x556070  },
+  { name: 'Green',    css: '#1a5c2a', hex: 0x1a5c2a  },
+  { name: 'Orange',   css: '#e05a00', hex: 0xe05a00  },
 ];
 
 var swatchDiv = document.getElementById('swatches');
-var cname = document.getElementById('cname');
-var carModel = null;
+var cname     = document.getElementById('cname');
+var carModel  = null;
 var origColors = [];
 
 COLORS.forEach(function(c, i) {
   var el = document.createElement('div');
-  el.className = 'sw' + (i===0?' on':'');
+  el.className = 'sw' + (i === 0 ? ' on' : '');
   el.style.background = c.css;
   el.onclick = function() {
-    document.querySelectorAll('.sw').forEach(function(s){ s.classList.remove('on'); });
+    document.querySelectorAll('.sw').forEach(function(s) { s.classList.remove('on'); });
     el.classList.add('on');
     cname.textContent = c.name.toUpperCase();
     if (!carModel) return;
+
     if (c.hex === null) {
-      // Restore originals
+      // Restore original colors
       origColors.forEach(function(o) {
         o.mesh.material.color.setHex(o.color);
       });
@@ -146,130 +167,166 @@ COLORS.forEach(function(c, i) {
         if (!child.isMesh) return;
         var mat = child.material;
         if (!mat || !mat.color) return;
-        var b = (mat.color.r + mat.color.g + mat.color.b) / 3;
-        // skip tires (very dark) and lights (emissive)
-        if (b > 0.08 && !(mat.emissive && (mat.emissive.r+mat.emissive.g+mat.emissive.b)>0.3)) {
-          mat.color.setHex(c.hex);
+
+        // Skip glass/windows (transparent)
+        if (mat.transparent && mat.opacity < 0.95) return;
+
+        // Skip emissive lights
+        if (mat.emissive) {
+          var em = mat.emissive.r + mat.emissive.g + mat.emissive.b;
+          if (em > 0.2) return;
         }
+
+        // Skip tires / very dark rubber
+        var brightness = (mat.color.r + mat.color.g + mat.color.b) / 3;
+        if (brightness < 0.08) return;
+
+        // Skip chrome / highly metallic parts
+        if (mat.metalness !== undefined && mat.roughness !== undefined) {
+          if (mat.metalness > 0.75 && mat.roughness < 0.25) return;
+        }
+
+        // Skip by material name keywords
+        var matName = (mat.name || '').toLowerCase();
+        var skipWords = [
+          'glass', 'window', 'windshield',
+          'tire', 'tyre', 'wheel', 'rubber',
+          'chrome', 'trim', 'light', 'lamp',
+          'lens', 'mirror', 'interior', 'seat',
+          'dashboard', 'plastic_dark', 'black'
+        ];
+        for (var k = 0; k < skipWords.length; k++) {
+          if (matName.indexOf(skipWords[k]) !== -1) return;
+        }
+
+        // Apply paint color
+        mat.color.setHex(c.hex);
       });
     }
   };
   swatchDiv.appendChild(el);
 });
 
-// LOAD MODEL
-var url = baseUrl + '/models/' + brand + '/' + model + '.glb';
+// ── GLTF LOADER ──
 var loader = new THREE.GLTFLoader();
 
-loader.load(url,
-  function(gltf) {
-    carModel = gltf.scene;
-
-    // Auto scale
-    var box = new THREE.Box3().setFromObject(carModel);
-    var size = box.getSize(new THREE.Vector3());
-    var center = box.getCenter(new THREE.Vector3());
-    var maxDim = Math.max(size.x, size.y, size.z);
-    var scale = 4.0 / maxDim;
-    carModel.scale.setScalar(scale);
-    carModel.position.sub(center.multiplyScalar(scale));
-    carModel.position.y += size.y * scale * 0.5;
-
-    // Save original colors
-    carModel.traverse(function(child) {
-      if (child.isMesh && child.material && child.material.color) {
-        origColors.push({
-          mesh: child,
-          color: child.material.color.getHex()
-        });
-      }
-    });
-
-    scene.add(carModel);
-    controls.target.set(0, size.y * scale * 0.4, 0);
-    controls.update();
-    document.getElementById('loading').style.display = 'none';
-  },
-  function(xhr) {
-    if (xhr.total > 0) {
-      var pct = Math.round(xhr.loaded/xhr.total*100);
-      document.getElementById('ltxt').textContent = 'LOADING ' + pct + '%';
-    }
-  },
-  function(err) {
-    document.getElementById('ltxt').textContent = 'MODEL NOT FOUND';
-    document.getElementById('ring').style.display = 'none';
-  }
-);
-
-// Stop auto rotate on touch
+// Stop auto-rotate when user touches the model
 renderer.domElement.addEventListener('pointerdown', function() {
   controls.autoRotate = false;
 });
 
-// RESIZE
+// Resize handler
 window.addEventListener('resize', function() {
-  W = window.innerWidth; H = window.innerHeight;
+  W = window.innerWidth;
+  H = window.innerHeight;
   renderer.setSize(W, H);
-  camera.aspect = W/H;
+  camera.aspect = W / H;
   camera.updateProjectionMatrix();
 });
 
-// ANIMATE - throttle to 30fps for old phones
+// ── ANIMATION LOOP ──
+// camera and controls are fully defined above, so this is safe
 var lastTime = 0;
 function animate(time) {
   requestAnimationFrame(animate);
-  if (time - lastTime < 33) return; // 30fps cap
+  if (time - lastTime < 33) return; // cap at ~30fps for performance
   lastTime = time;
   controls.update();
   renderer.render(scene, camera);
 }
 animate(0);
 
-// Called by Flutter
+// ── INIT VIEWER — called by Flutter via JavaScriptChannel ──
 function initViewer() {
-  brand   = window.BRAND    || brand;
-  model   = window.MODEL    || model;
-  baseUrl = window.BASE_URL || baseUrl;
+  // Accept overrides from Flutter
+  brand     = window.BRAND    || brand;
+  modelName = window.MODEL    || modelName;
+  baseUrl   = window.BASE_URL || baseUrl;
+
   document.getElementById('badge').textContent =
-    brand.toUpperCase() + ' \u00B7 ' + model.toUpperCase();
-  if (carModel) { scene.remove(carModel); carModel = null; origColors = []; }
+    brand.toUpperCase() + ' \u00B7 ' + modelName.toUpperCase();
+
+  // Remove old model if switching vehicles
+  if (carModel) {
+    scene.remove(carModel);
+    carModel   = null;
+    origColors = [];
+  }
+
+  // Reset swatch to "Original"
+  document.querySelectorAll('.sw').forEach(function(s, i) {
+    s.classList.toggle('on', i === 0);
+  });
+  cname.textContent = 'ORIGINAL';
+
+  // Show loading overlay
   document.getElementById('loading').style.display = 'flex';
   document.getElementById('ltxt').textContent = 'LOADING';
   document.getElementById('ring').style.display = 'block';
-  var newUrl = baseUrl + '/models/' + brand + '/' + model + '.glb';
-  loader.load(newUrl,
-    function(gltf) {
-      carModel = gltf.scene;
-      var box = new THREE.Box3().setFromObject(carModel);
-      var size = box.getSize(new THREE.Vector3());
-      var center = box.getCenter(new THREE.Vector3());
-      var maxDim = Math.max(size.x, size.y, size.z);
-      var scale = 4.0 / maxDim;
-      carModel.scale.setScalar(scale);
-      carModel.position.sub(center.multiplyScalar(scale));
-      carModel.position.y += size.y * scale * 0.5;
-      carModel.traverse(function(child) {
-        if (child.isMesh && child.material && child.material.color) {
-          origColors.push({ mesh: child, color: child.material.color.getHex() });
+
+  var url = baseUrl + '/models/' + brand + '/' + modelName + '.glb';
+  console.log('Loading 3D model from: ' + url);
+
+  function doLoad() {
+    loader.load(
+      url,
+      function(gltf) {
+        // ── Model loaded successfully ──
+        carModel = gltf.scene;
+
+        // Center and scale to fit viewport
+        var box    = new THREE.Box3().setFromObject(carModel);
+        var size   = box.getSize(new THREE.Vector3());
+        var center = box.getCenter(new THREE.Vector3());
+        var maxDim = Math.max(size.x, size.y, size.z);
+        var scale  = 4.0 / maxDim;
+
+        carModel.scale.setScalar(scale);
+        carModel.position.sub(center.multiplyScalar(scale));
+        carModel.position.y += size.y * scale * 0.5;
+
+        // Store original colors for "Original" swatch reset
+        carModel.traverse(function(child) {
+          if (child.isMesh && child.material && child.material.color) {
+            origColors.push({ mesh: child, color: child.material.color.getHex() });
+          }
+        });
+
+        scene.add(carModel);
+
+        // Point camera target at model center
+        controls.target.set(0, size.y * scale * 0.4, 0);
+        controls.update();
+
+        // Hide loading overlay
+        document.getElementById('loading').style.display = 'none';
+        console.log('Model loaded: ' + brand + ' ' + modelName);
+      },
+      function(xhr) {
+        // ── Progress ──
+        if (xhr.total > 0) {
+          var pct = Math.round(xhr.loaded / xhr.total * 100);
+          document.getElementById('ltxt').textContent = 'LOADING ' + pct + '%';
         }
-      });
-      scene.add(carModel);
-      controls.target.set(0, size.y * scale * 0.4, 0);
-      controls.update();
-      document.getElementById('loading').style.display = 'none';
-    },
-    function(xhr) {
-      if (xhr.total > 0) {
-        var pct = Math.round(xhr.loaded/xhr.total*100);
-        document.getElementById('ltxt').textContent = 'LOADING ' + pct + '%';
+      },
+      function(err) {
+        // ── Error ──
+        console.error('Failed to load: ' + url + ' | ' + err);
+        document.getElementById('ltxt').textContent  = 'MODEL NOT FOUND';
+        document.getElementById('ring').style.display = 'none';
       }
-    },
-    function() {
-      document.getElementById('ltxt').textContent = 'MODEL NOT FOUND';
-      document.getElementById('ring').style.display = 'none';
-    }
-  );
+    );
+  }
+
+  // Use MeshoptDecoder if available (for compressed GLBs)
+  if (typeof MeshoptDecoder !== 'undefined' && MeshoptDecoder.ready) {
+    MeshoptDecoder.ready.then(function() {
+      loader.setMeshoptDecoder(MeshoptDecoder);
+      doLoad();
+    });
+  } else {
+    doLoad();
+  }
 }
 </script>
 </body>
