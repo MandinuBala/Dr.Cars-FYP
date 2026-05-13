@@ -12,7 +12,7 @@ const serviceRecordSchema = new mongoose.Schema(
     notes: String,
     date: Date,
   },
-  { timestamps: true }
+  { timestamps: true, collection: "servicerecords" }
 );
 
 module.exports = mongoose.model("ServiceRecord", serviceRecordSchema);

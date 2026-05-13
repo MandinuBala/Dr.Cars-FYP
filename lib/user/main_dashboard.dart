@@ -124,10 +124,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  // ── ADD NEW GLB FILES HERE WHEN YOU GET THEM ──────────
   static const Map<String, List<String>> _availableModels = {
     'BMW': ['Z4'],
-    'Toyota': ['Camry', 'Crown','Fortuner'],
+    'Toyota': ['Camry', 'Crown', 'Fortuner'],
     'Nissan': ['X-Trail', 'GT-R', '370Z'],
     'Honda': ['Vezel'],
     'Suzuki': ['Vitara'],
@@ -143,11 +142,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final vehicleAsset = VehicleImageHelper.getImage(brand, model);
 
     Widget imageWidget;
-
     if (_vehicleImageUrl != null && _vehicleImageUrl!.isNotEmpty) {
       imageWidget = Image.network(
         _vehicleImageUrl!,
-        fit: BoxFit.contain, // ← contain instead of cover
+        fit: BoxFit.contain,
         errorBuilder:
             (_, __, ___) =>
                 vehicleAsset != null
@@ -155,35 +153,87 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     : Image.asset('images/dashcar.png', fit: BoxFit.contain),
       );
     } else if (vehicleAsset != null) {
-      imageWidget = Image.asset(
-        vehicleAsset,
-        fit: BoxFit.contain, // ← contain instead of cover
-        errorBuilder:
-            (_, __, ___) =>
-                Image.asset('images/dashcar.png', fit: BoxFit.contain),
-      );
+      imageWidget = Image.asset(vehicleAsset, fit: BoxFit.contain);
     } else {
       imageWidget = Image.asset('images/dashcar.png', fit: BoxFit.contain);
     }
 
     return Stack(
       children: [
-        // White background container with fixed size
+        // ── Light container — matches car photo background ─────────────
         Container(
           width: w,
-          height: 220,
-          decoration: BoxDecoration(
-            color: AppColors.surfaceDark,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-          ),
-          padding: const EdgeInsets.all(20),
-          child: Center(
-            // ← wrap in Center
-            child: imageWidget,
+          height: 200,
+          color: const Color(0xFFF0EEEA), // warm light grey matching car photos
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Center(child: imageWidget),
           ),
         ),
 
-        // 3D button
+        // ── Strong bottom gradient: light → dark card ─────────────────
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: Container(
+            height: 90,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.transparent,
+                  AppColors.surfaceDark.withOpacity(0.6),
+                  AppColors.surfaceDark,
+                ],
+                stops: const [0.0, 0.6, 1.0],
+              ),
+            ),
+          ),
+        ),
+
+        // ── Left fade ─────────────────────────────────────────────────
+        Positioned(
+          left: 0,
+          top: 0,
+          bottom: 0,
+          child: Container(
+            width: 28,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.centerRight,
+                end: Alignment.centerLeft,
+                colors: [
+                  Colors.transparent,
+                  AppColors.surfaceDark.withOpacity(0.4),
+                ],
+              ),
+            ),
+          ),
+        ),
+
+        // ── Right fade ────────────────────────────────────────────────
+        Positioned(
+          right: 0,
+          top: 0,
+          bottom: 0,
+          child: Container(
+            width: 28,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                colors: [
+                  Colors.transparent,
+                  AppColors.surfaceDark.withOpacity(0.4),
+                ],
+              ),
+            ),
+          ),
+        ),
+
+        // ── 3D button ─────────────────────────────────────────────────
         if (hasGlb)
           Positioned(
             bottom: 12,
@@ -203,7 +253,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.75),
+                  color: Colors.black.withOpacity(0.65),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: Colors.white24),
                 ),
@@ -456,8 +506,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         final text = theme.textTheme;
 
         return Scaffold(
+          backgroundColor: AppColors.richBlack, // ← fixes white page background
           appBar: AppBar(
-            backgroundColor: kAppBarColor,
+            backgroundColor: AppColors.obsidian,
             automaticallyImplyLeading: false,
             title: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -726,21 +777,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(height: 20),
                 Text(
                   AppStrings.get('your_vehicle', lang),
-                  style: text.headlineSmall?.copyWith(fontSize: 32),
+                  style: GoogleFonts.cormorantGaramond(
+                    fontSize: 32,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.gold,
+                    letterSpacing: 0.5,
+                  ),
                 ),
                 const SizedBox(height: 10),
 
                 if (isLoading)
                   const Padding(
                     padding: EdgeInsets.all(20),
-                    child: CircularProgressIndicator(),
+                    child: CircularProgressIndicator(color: AppColors.gold),
                   )
                 else if (errorMessage != null)
                   Padding(
                     padding: const EdgeInsets.all(16),
                     child: Text(
                       errorMessage!,
-                      style: text.bodyLarge?.copyWith(color: kErrorRed),
+                      style: GoogleFonts.jost(
+                        color: AppColors.error,
+                        fontSize: 16,
+                      ),
                     ),
                   )
                 else if (vehicleData == null)
@@ -748,7 +807,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     padding: const EdgeInsets.all(16),
                     child: Text(
                       AppStrings.get('no_vehicle_data', lang),
-                      style: text.bodyLarge,
+                      style: GoogleFonts.jost(
+                        color: AppColors.textSecondary,
+                        fontSize: 16,
+                      ),
                     ),
                   )
                 else
@@ -913,34 +975,114 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Text(
-                    AppStrings.get('upcoming_maintenance', lang),
-                    style: text.titleMedium,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      AppStrings.get('upcoming_maintenance', lang),
+                      style: GoogleFonts.jost(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.gold,
+                        letterSpacing: 2,
+                      ),
+                    ),
                   ),
                 ),
 
-                InkWell(
-                  onTap:
-                      () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => ServiceRecordsPage()),
+                const SizedBox(height: 8),
+
+                Container(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceDark,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.borderGold),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.gold.withOpacity(0.05),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
                       ),
-                  child: ListTile(
-                    title: Text(
-                      vehicleData != null
-                          ? "${vehicleData!['selectedBrand']} ${vehicleData!['selectedModel']} (${vehicleData!['year']})"
-                          : '',
+                    ],
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap:
+                          () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ServiceRecordsPage(),
+                            ),
+                          ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: AppColors.warning.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: AppColors.warning.withOpacity(0.3),
+                                ),
+                              ),
+                              child: const Icon(
+                                Icons.build_outlined,
+                                color: AppColors.warning,
+                                size: 22,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    vehicleData != null
+                                        ? '${vehicleData!['selectedBrand']} ${vehicleData!['selectedModel']} (${vehicleData!['year']})'
+                                        : '',
+                                    style: GoogleFonts.jost(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    vehicleData != null
+                                        ? '${AppStrings.get('next_maintenance', lang)}: ${getNextMaintenanceMileage(int.tryParse(vehicleData!['mileage'].toString()) ?? 0)} KM'
+                                        : '',
+                                    style: GoogleFonts.jost(
+                                      fontSize: 12,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(
+                              Icons.arrow_forward_ios,
+                              size: 14,
+                              color: AppColors.gold,
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                    subtitle: Text(
-                      vehicleData != null
-                          ? '${AppStrings.get('next_maintenance', lang)}: ${getNextMaintenanceMileage(int.tryParse(vehicleData!['mileage'].toString()) ?? 0)} KM'
-                          : '',
-                    ),
-                    trailing: const Icon(Icons.build, color: Colors.orange),
                   ),
                 ),
+
+                const SizedBox(height: 8),
 
                 _buildSmartVehicleDashboardButton(lang),
+
+                const SizedBox(height: 20),
               ],
             ),
           ),

@@ -197,7 +197,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       height: 160,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Colors.white,
+                        color: AppColors.surfaceDark,
                         boxShadow: [
                           BoxShadow(
                             color: AppColors.gold.withOpacity(0.3),
@@ -396,54 +396,104 @@ class _PasswordDialogState extends State<PasswordDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Enter Password'),
+      backgroundColor: AppColors.surfaceDark,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: AppColors.borderGold),
+      ),
+      title: Text(
+        'Enter Password',
+        style: GoogleFonts.cormorantGaramond(
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
+          color: AppColors.textPrimary,
+        ),
+      ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           TextField(
             controller: _passwordController,
             obscureText: true,
+            style: GoogleFonts.jost(color: AppColors.textPrimary, fontSize: 14),
             decoration: InputDecoration(
               labelText: 'Password',
+              labelStyle: GoogleFonts.jost(
+                color: AppColors.textSecondary,
+                fontSize: 13,
+              ),
+              floatingLabelStyle: GoogleFonts.jost(
+                color: AppColors.gold,
+                fontSize: 12,
+              ),
               errorText: _errorText,
+              errorStyle: GoogleFonts.jost(color: AppColors.error),
+              filled: true,
+              fillColor: AppColors.surfaceElevated,
+              prefixIcon: const Icon(
+                Icons.lock_outline,
+                color: AppColors.gold,
+                size: 20,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: AppColors.borderGold),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: AppColors.borderGold),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: AppColors.gold, width: 1.5),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 12,
+              ),
             ),
           ),
           if (_isLoading)
             const Padding(
-              padding: EdgeInsets.only(top: 10),
-              child: CircularProgressIndicator(),
+              padding: EdgeInsets.only(top: 12),
+              child: CircularProgressIndicator(color: AppColors.gold),
             ),
         ],
       ),
       actions: [
         TextButton(
-          onPressed: () {
-            Navigator.of(context).pop(false);
-          },
-          child: const Text('Cancel'),
+          onPressed: () => Navigator.of(context).pop(false),
+          child: Text(
+            'Cancel',
+            style: GoogleFonts.jost(color: AppColors.textSecondary),
+          ),
         ),
-        TextButton(
+        ElevatedButton(
           onPressed: () async {
             setState(() {
               _isLoading = true;
               _errorText = null;
             });
-
             final isAuthenticated = await _verifyPassword();
-
-            setState(() {
-              _isLoading = false;
-            });
-
+            setState(() => _isLoading = false);
             if (isAuthenticated) {
               Navigator.of(context).pop(true);
             } else {
-              setState(() {
-                _errorText = "Wrong password!";
-              });
+              setState(() => _errorText = 'Wrong password!');
             }
           },
-          child: const Text('Submit'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.gold,
+            foregroundColor: AppColors.obsidian,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          child: Text(
+            'Submit',
+            style: GoogleFonts.jost(fontWeight: FontWeight.w600),
+          ),
         ),
       ],
     );

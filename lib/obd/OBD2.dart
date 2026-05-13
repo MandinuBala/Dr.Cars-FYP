@@ -360,6 +360,7 @@ class _OBD2PageState extends State<OBD2Page> {
 }
 */
 
+// lib/obd/OBD2.dart
 import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
@@ -376,20 +377,6 @@ import 'package:dr_cars_fyp/theme/app_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:dr_cars_fyp/widgets/app_bottom_nav.dart';
 
-void main() => runApp(MyApp());
-
-class MyApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'OBD-II App',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(primarySwatch: Colors.blue),
-      home: OBD2Page(),
-    );
-  }
-}
-
 class OBD2Page extends StatefulWidget {
   const OBD2Page({Key? key}) : super(key: key);
 
@@ -398,8 +385,6 @@ class OBD2Page extends StatefulWidget {
 }
 
 class _OBD2PageState extends State<OBD2Page> {
-  int _selectedIndex = 2;
-
   bool _isConnected = false;
   String? _selectedVehicle;
   double? _rpm;
@@ -410,7 +395,7 @@ class _OBD2PageState extends State<OBD2Page> {
   BluetoothDevice? selectedDevice;
   List<BluetoothDevice> devices = [];
   bool isConnecting = false;
-  String connectionStatus = "";
+  String connectionStatus = '';
   final BluetoothService btService = BluetoothService();
 
   final List<String> _vehicles = [
@@ -435,7 +420,6 @@ class _OBD2PageState extends State<OBD2Page> {
   @override
   void initState() {
     super.initState();
-    _selectedIndex = 2;
     _requestBluetoothAndLoad();
   }
 
@@ -448,33 +432,25 @@ class _OBD2PageState extends State<OBD2Page> {
   void loadDevices() async {
     final bondedDevices =
         await FlutterBluetoothSerial.instance.getBondedDevices();
-    setState(() {
-      devices = bondedDevices;
-    });
+    setState(() => devices = bondedDevices);
   }
 
   Future<void> _connectToOBD2() async {
     if (selectedDevice == null) return;
-
     setState(() {
       isConnecting = true;
-      connectionStatus = "Connecting to ${selectedDevice!.name}...";
+      connectionStatus = 'Connecting to ${selectedDevice!.name}...';
     });
-
     bool success = await btService.connect(selectedDevice!.address);
-
     setState(() {
       isConnecting = false;
       _isConnected = success;
       connectionStatus =
           success
-              ? "Connected to ${selectedDevice!.name}"
-              : "Connection failed. Try again.";
+              ? 'Connected to ${selectedDevice!.name}'
+              : 'Connection failed. Try again.';
     });
-
-    if (success) {
-      _startLiveDataPolling();
-    }
+    if (success) _startLiveDataPolling();
   }
 
   void _disconnectOBD2() {
@@ -489,22 +465,14 @@ class _OBD2PageState extends State<OBD2Page> {
     });
   }
 
-  void _clearTroubleCodes() async {
-    if (_isConnected) {
-      await btService.clearDTCs();
-      setState(() {
-        _dtcs.clear();
-      });
-    }
-  }
-
   void _startLiveDataPolling() {
-    _liveDataTimer = Timer.periodic(Duration(milliseconds: 1500), (_) async {
+    _liveDataTimer = Timer.periodic(const Duration(milliseconds: 1500), (
+      _,
+    ) async {
       final newRpm = await btService.getRPM();
       final newSpeed = await btService.getSpeed();
       final newCoolantTemp = await btService.getCoolantTemp();
       final newDtcs = await btService.getDTCs();
-
       setState(() {
         _rpm = (newRpm > 0 && newRpm < 10000) ? newRpm.toDouble() : 0.0;
         _speed = (newSpeed >= 0 && newSpeed < 300) ? newSpeed.toDouble() : 0.0;
@@ -512,15 +480,16 @@ class _OBD2PageState extends State<OBD2Page> {
             (newCoolantTemp >= -40 && newCoolantTemp < 150)
                 ? newCoolantTemp.toDouble()
                 : null;
-
         _dtcs =
-            newDtcs.map((code) {
-              return {
-                'code': code,
-                'description':
-                    btService.dtcDescriptions[code] ?? 'Unknown code',
-              };
-            }).toList();
+            newDtcs
+                .map(
+                  (code) => {
+                    'code': code,
+                    'description':
+                        btService.dtcDescriptions[code] ?? 'Unknown code',
+                  },
+                )
+                .toList();
       });
     });
   }
@@ -531,6 +500,7 @@ class _OBD2PageState extends State<OBD2Page> {
     super.dispose();
   }
 
+  // ── Live data card ────────────────────────────────────────────────────────
   Widget _liveDataCard(String label, String value) {
     return Container(
       width: 100,
@@ -570,6 +540,7 @@ class _OBD2PageState extends State<OBD2Page> {
               color: AppColors.textSecondary,
               letterSpacing: 0.5,
             ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -582,122 +553,211 @@ class _OBD2PageState extends State<OBD2Page> {
       valueListenable: localeNotifier,
       builder: (context, lang, _) {
         return Scaffold(
+          backgroundColor: AppColors.richBlack,
           appBar: AppBar(
             backgroundColor: AppColors.obsidian,
+            foregroundColor: AppColors.textPrimary,
+            iconTheme: const IconThemeData(color: AppColors.gold),
             title: Text(
               AppStrings.get('obd2_diagnostics', lang),
-              style: const TextStyle(
-                fontSize: 25,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+              style: GoogleFonts.cormorantGaramond(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+                letterSpacing: 0.5,
               ),
             ),
           ),
           body: SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(16),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Bluetooth connection card
-                Card(
-                  elevation: 4,
-                  color: AppColors.surfaceDark,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
-                    side: const BorderSide(color: AppColors.borderGold),
+                // ── Bluetooth connection card ─────────────────────────────
+                Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceDark,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.borderGold),
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  _isConnected
-                                      ? Icons.bluetooth_connected
-                                      : Icons.bluetooth_disabled,
-                                  color:
-                                      _isConnected ? Colors.green : Colors.red,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  _isConnected
-                                      ? AppStrings.get('connected', lang)
-                                      : AppStrings.get('disconnected', lang),
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color:
-                                        _isConnected
-                                            ? Colors.green
-                                            : Colors.red,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            ElevatedButton(
-                              onPressed:
-                                  _isConnected
-                                      ? _disconnectOBD2
-                                      : _connectToOBD2,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor:
-                                    _isConnected ? Colors.red : Colors.green,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                              ),
-                              child: Text(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
                                 _isConnected
-                                    ? AppStrings.get('disconnect', lang)
-                                    : AppStrings.get('connect', lang),
+                                    ? Icons.bluetooth_connected
+                                    : Icons.bluetooth_disabled,
+                                color:
+                                    _isConnected
+                                        ? AppColors.success
+                                        : AppColors.error,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                _isConnected
+                                    ? AppStrings.get('connected', lang)
+                                    : AppStrings.get('disconnected', lang),
+                                style: GoogleFonts.jost(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color:
+                                      _isConnected
+                                          ? AppColors.success
+                                          : AppColors.error,
+                                ),
+                              ),
+                            ],
+                          ),
+                          ElevatedButton(
+                            onPressed:
+                                _isConnected ? _disconnectOBD2 : _connectToOBD2,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor:
+                                  _isConnected
+                                      ? AppColors.error
+                                      : AppColors.success,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
                               ),
                             ),
-                          ],
-                        ),
-                        if (connectionStatus.isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          Text(connectionStatus),
-                        ],
-                        if (!_isConnected) ...[
-                          const SizedBox(height: 10),
-                          DropdownButton<BluetoothDevice>(
-                            hint: Text(AppStrings.get('select_device', lang)),
-                            value: selectedDevice,
-                            isExpanded: true,
-                            onChanged: (BluetoothDevice? value) {
-                              setState(() => selectedDevice = value);
-                            },
-                            items:
-                                devices
-                                    .map(
-                                      (device) => DropdownMenuItem(
-                                        value: device,
-                                        child: Text(
-                                          device.name ?? device.address,
-                                        ),
-                                      ),
-                                    )
-                                    .toList(),
+                            child: Text(
+                              _isConnected
+                                  ? AppStrings.get('disconnect', lang)
+                                  : AppStrings.get('connect', lang),
+                              style: GoogleFonts.jost(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ),
                         ],
+                      ),
+
+                      if (connectionStatus.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          connectionStatus,
+                          style: GoogleFonts.jost(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
                       ],
-                    ),
+
+                      if (!_isConnected) ...[
+                        const SizedBox(height: 12),
+                        DropdownButtonHideUnderline(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceElevated,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: AppColors.borderGold),
+                            ),
+                            child: DropdownButton<BluetoothDevice>(
+                              hint: Text(
+                                AppStrings.get('select_device', lang),
+                                style: GoogleFonts.jost(
+                                  color: AppColors.textMuted,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              value: selectedDevice,
+                              isExpanded: true,
+                              dropdownColor: AppColors.surfaceElevated,
+                              style: GoogleFonts.jost(
+                                color: AppColors.textPrimary,
+                                fontSize: 14,
+                              ),
+                              icon: const Icon(
+                                Icons.keyboard_arrow_down_rounded,
+                                color: AppColors.gold,
+                              ),
+                              onChanged: (BluetoothDevice? value) {
+                                setState(() => selectedDevice = value);
+                              },
+                              items:
+                                  devices
+                                      .map(
+                                        (device) => DropdownMenuItem(
+                                          value: device,
+                                          child: Text(
+                                            device.name ?? device.address,
+                                          ),
+                                        ),
+                                      )
+                                      .toList(),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
+
                 const SizedBox(height: 20),
 
-                // Vehicle dropdown
+                // ── Vehicle dropdown ──────────────────────────────────────
                 DropdownButtonFormField<String>(
                   value: _selectedVehicle,
+                  style: GoogleFonts.jost(
+                    color: AppColors.textPrimary,
+                    fontSize: 14,
+                  ),
+                  dropdownColor: AppColors.surfaceElevated,
+                  icon: const Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color: AppColors.gold,
+                  ),
+                  selectedItemBuilder:
+                      (context) =>
+                          _vehicles
+                              .map(
+                                (v) => Text(
+                                  v,
+                                  style: GoogleFonts.jost(
+                                    color: AppColors.textPrimary,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              )
+                              .toList(),
                   decoration: InputDecoration(
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
                     filled: true,
-                    fillColor: Colors.grey[100],
+                    fillColor: AppColors.surfaceElevated,
                     hintText: AppStrings.get('select_vehicle', lang),
+                    hintStyle: GoogleFonts.jost(
+                      color: AppColors.textMuted,
+                      fontSize: 14,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppColors.borderGold),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppColors.borderGold),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: AppColors.gold,
+                        width: 1.5,
+                      ),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
                   ),
                   items:
                       _vehicles
@@ -708,15 +768,16 @@ class _OBD2PageState extends State<OBD2Page> {
                   onChanged:
                       (value) => setState(() => _selectedVehicle = value),
                 ),
+
                 const SizedBox(height: 20),
 
-                // Live data cards
+                // ── Live data cards ───────────────────────────────────────
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     _liveDataCard('RPM', _rpm?.toStringAsFixed(0) ?? '--'),
                     _liveDataCard(
-                      'Coolant Temp',
+                      'Coolant',
                       _coolantTemp != null
                           ? '${_coolantTemp!.toStringAsFixed(1)}°C'
                           : '--',
@@ -729,60 +790,130 @@ class _OBD2PageState extends State<OBD2Page> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
-
-                // Trouble codes
-                if (_dtcs.isNotEmpty)
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children:
-                        _dtcs
-                            .map(
-                              (entry) => ListTile(
-                                title: Text("Code: ${entry['code']}"),
-                                subtitle: Text(
-                                  "Description: ${entry['description']}",
-                                ),
-                              ),
-                            )
-                            .toList(),
-                  )
-                else
-                  Text(AppStrings.get('no_trouble_codes', lang)),
 
                 const SizedBox(height: 20),
 
-                // Reset button
-                ElevatedButton.icon(
-                  onPressed:
-                      _isConnected
-                          ? () async {
-                            await btService.clearDTCs();
-                            setState(() => _dtcs.clear());
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Trouble codes cleared successfully.',
+                // ── Trouble codes ─────────────────────────────────────────
+                if (_dtcs.isNotEmpty) ...[
+                  luxuryLabel('Trouble Codes'),
+                  const SizedBox(height: 8),
+                  ..._dtcs.map(
+                    (entry) => Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceDark,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: AppColors.error.withOpacity(0.4),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.warning_amber_rounded,
+                            color: AppColors.error,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  entry['code'] ?? '',
+                                  style: GoogleFonts.jost(
+                                    color: AppColors.error,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 13,
+                                  ),
                                 ),
-                                backgroundColor: Colors.green,
-                              ),
-                            );
-                          }
-                          : null,
-                  icon: const Icon(Icons.restart_alt),
-                  label: Text(AppStrings.get('reset_trouble_codes', lang)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.redAccent,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 12,
+                                Text(
+                                  entry['description'] ?? '',
+                                  style: GoogleFonts.jost(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    textStyle: const TextStyle(fontSize: 16),
-                    shape: RoundedRectangleBorder(
+                  ),
+                ] else ...[
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceDark,
                       borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppColors.borderGold),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.check_circle_outline,
+                          color: AppColors.success,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          AppStrings.get('no_trouble_codes', lang),
+                          style: GoogleFonts.jost(
+                            color: AppColors.success,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
+                const SizedBox(height: 20),
+
+                // ── Reset button ──────────────────────────────────────────
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed:
+                        _isConnected
+                            ? () async {
+                              await btService.clearDTCs();
+                              setState(() => _dtcs.clear());
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    backgroundColor: AppColors.success,
+                                    content: Text(
+                                      'Trouble codes cleared successfully.',
+                                      style: GoogleFonts.jost(
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }
+                            }
+                            : null,
+                    icon: const Icon(Icons.restart_alt),
+                    label: Text(
+                      AppStrings.get('reset_trouble_codes', lang),
+                      style: GoogleFonts.jost(fontWeight: FontWeight.w600),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.error,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   ),
                 ),
+
+                const SizedBox(height: 20),
               ],
             ),
           ),
@@ -793,6 +924,7 @@ class _OBD2PageState extends State<OBD2Page> {
   }
 }
 
+// ── BluetoothService ──────────────────────────────────────────────────────────
 class BluetoothService {
   static final BluetoothService _instance = BluetoothService._internal();
   factory BluetoothService() => _instance;
@@ -811,7 +943,6 @@ class BluetoothService {
       _streamSubscription = _connection!.input!.listen((Uint8List data) {
         final incoming = utf8.decode(data);
         _buffer.write(incoming);
-
         if (_buffer.toString().contains('>') &&
             _responseCompleter != null &&
             !_responseCompleter!.isCompleted) {
@@ -825,11 +956,7 @@ class BluetoothService {
           _buffer.clear();
         }
       });
-
-      _streamSubscription!.onDone(() {
-        _connection = null;
-      });
-
+      _streamSubscription!.onDone(() => _connection = null);
       return true;
     } catch (_) {
       return false;
@@ -844,7 +971,7 @@ class BluetoothService {
 
   void sendCommand(String command) {
     if (_connection != null && _connection!.isConnected) {
-      final cmd = "$command\r";
+      final cmd = '$command\r';
       _connection!.output.add(Uint8List.fromList(utf8.encode(cmd)));
       _connection!.output.allSent;
     }
@@ -854,7 +981,7 @@ class BluetoothService {
     _responseCompleter = Completer<String>();
     sendCommand(command);
     final response = await _responseCompleter!.future.timeout(
-      Duration(seconds: 5),
+      const Duration(seconds: 5),
       onTimeout: () => 'TIMEOUT',
     );
     if (response.trim().isEmpty || response == 'TIMEOUT') return '';
@@ -862,10 +989,7 @@ class BluetoothService {
   }
 
   Future<int> getRPM() async {
-    final res = await sendAndRead("010C");
-    print("RPM Raw: $res");
-
-    // Match valid RPM response like "41 0C 1A F8"
+    final res = await sendAndRead('010C');
     final match = RegExp(
       r'41\s0C\s([0-9A-Fa-f]{2})\s([0-9A-Fa-f]{2})',
     ).firstMatch(res);
@@ -874,80 +998,85 @@ class BluetoothService {
         final A = int.parse(match.group(1)!, radix: 16);
         final B = int.parse(match.group(2)!, radix: 16);
         final rpm = ((256 * A) + B) ~/ 4;
-
-        // Optional: Clamp out-of-range or fake values
-        if (rpm < 50 || rpm > 8000) {
-          return 0; // assume engine is off
-        }
+        if (rpm < 50 || rpm > 8000) return 0;
         return rpm;
-      } catch (e) {
-        print("RPM parse error: $e");
-      }
+      } catch (_) {}
     }
-
-    // Fallback: invalid data or car off
     return 0;
   }
 
   Future<int> getSpeed() async {
-    final res = await sendAndRead("010D");
-    print("Speed Raw: $res");
-
+    final res = await sendAndRead('010D');
     final match = RegExp(r'41\s0D\s([0-9A-Fa-f]{2})').firstMatch(res);
-    if (match != null) {
-      return int.parse(match.group(1)!, radix: 16);
-    }
+    if (match != null) return int.parse(match.group(1)!, radix: 16);
     return 0;
   }
 
   Future<int> getCoolantTemp() async {
-    final res = await sendAndRead("0105");
-    print("Coolant Raw: $res");
-
+    final res = await sendAndRead('0105');
     final match = RegExp(r'41\s05\s([0-9A-Fa-f]{2})').firstMatch(res);
-    if (match != null) {
-      return int.parse(match.group(1)!, radix: 16) - 40;
-    }
+    if (match != null) return int.parse(match.group(1)!, radix: 16) - 40;
     return 0;
   }
 
+  Future<List<String>> getDTCs() async {
+    final res = await sendAndRead('03');
+    if (res.length < 4 || res.toLowerCase().contains('no')) return [];
+    List<String> dtcs = [];
+    try {
+      for (int i = 4; i + 3 < res.length; i += 4) {
+        dtcs.add(_decodeDTC(res.substring(i, i + 4)));
+      }
+    } catch (_) {}
+    return dtcs;
+  }
+
+  Future<void> clearDTCs() async => await sendAndRead('04');
+
+  String _decodeDTC(String raw) {
+    if (raw.length < 4) return 'Invalid';
+    final b1 = int.parse(raw.substring(0, 2), radix: 16);
+    final b2 = raw.substring(2, 4);
+    final type = ['P', 'C', 'B', 'U'][(b1 & 0xC0) >> 6];
+    final digit1 = ((b1 & 0x30) >> 4).toString();
+    final digit2 = (b1 & 0x0F).toRadixString(16).toUpperCase();
+    return '$type$digit1$digit2$b2';
+  }
+
   final Map<String, String> dtcDescriptions = {
-    // Engine Management & Timing (Includes cam/crank sensors, VVT, valves)
     'P0008': 'Engine Position System Misalignment Bank 1',
     'P0009': 'Engine Position System Variation Bank 2',
-    'P0010': 'Camshaft Position Actuator “A” Circuit Malfunction (Bank 1)',
-    'P0011': 'Camshaft “A” Timing Problem',
-    'P0012': 'Camshaft “A” Over‑Retarded (Bank 1)',
+    'P0010': 'Camshaft Position Actuator "A" Circuit Malfunction (Bank 1)',
+    'P0011': 'Camshaft "A" Timing Problem',
+    'P0012': 'Camshaft "A" Over‑Retarded (Bank 1)',
     'P0013': 'VVT Solenoid/Actuator Circuit Worn',
-    'P0014': 'Camshaft “B” Over‑Advanced (Bank 1)',
-    'P0015': 'Camshaft “B” Over‑Retarded (PCM)',
+    'P0014': 'Camshaft "B" Over‑Advanced (Bank 1)',
+    'P0015': 'Camshaft "B" Over‑Retarded (PCM)',
     'P0016': 'Crank–Cam Correlation Bank 1 Sensor A',
     'P0017': 'Camshaft and Crankshaft Correlation Issue',
     'P0018': 'Crank–Cam Correlation Bank 2 Sensor A',
     'P0019': 'Crank–Cam Correlation Bank 2 Sensor B',
-    'P0020': 'Camshaft Position Actuator “A” Circuit (Bank 2)',
+    'P0020': 'Camshaft Position Actuator "A" Circuit (Bank 2)',
     'P0021': 'Incorrect Camshaft Variable Timing Solenoid',
-    'P0022': 'Camshaft “A” Timing Issue',
-    'P0023': 'Camshaft Position Actuator “B” Circuit',
-    'P0024': 'Camshaft “B” Over‑Advanced Timing',
-    'P0025': 'Camshaft “B” Over‑Retarded Timing',
+    'P0022': 'Camshaft "A" Timing Issue',
+    'P0023': 'Camshaft Position Actuator "B" Circuit',
+    'P0024': 'Camshaft "B" Over‑Advanced Timing',
+    'P0025': 'Camshaft "B" Over‑Retarded Timing',
     'P0026': 'Intake Valve Control Solenoid Circuit Malfunction',
     'P0027': 'Exhaust Valve Control Solenoid Circuit Problem',
     'P0028': 'Intake Valve Control Malfunction (Bank 2)',
     'P0029': 'Exhaust Valve Control Range/Performance',
-    'P0335': 'Crankshaft Position Sensor “A” Circuit Malfunction',
+    'P0335': 'Crankshaft Position Sensor "A" Circuit Malfunction',
     'P0340': 'Camshaft Position Sensor Circuit Malfunction',
-    'P0341': 'Camshaft Position Sensor “A” Circuit Range/Performance (Bank 1)',
+    'P0341': 'Camshaft Position Sensor "A" Circuit Range/Performance (Bank 1)',
     'P06DE': 'Engine Oil Pressure Control Circuit Stuck On',
-
-    // Fuel System & Pressure / Injectors
     'P0001': 'Fuel Volume Regulator Control Circuit/Open',
     'P0002': 'Fuel Volume Regulator Range/Performance',
     'P0003': 'Fuel Volume Regulator Low Circuit',
     'P0004': 'Fuel Volume Regulator High Circuit',
-    'P0005': 'Fuel Shutoff Valve “A” Open Circuit',
-    'P0006': 'Fuel Shutoff Valve “A” Low Circuit',
-    'P0007': 'Fuel Shutoff Valve “A” High Circuit',
+    'P0005': 'Fuel Shutoff Valve "A" Open Circuit',
+    'P0006': 'Fuel Shutoff Valve "A" Low Circuit',
+    'P0007': 'Fuel Shutoff Valve "A" High Circuit',
     'P0087': 'Fuel Rail/System Low Pressure',
     'P0088': 'Fuel Rail/System High Pressure',
     'P0089': 'Fuel Pressure Regulator 1 Problem',
@@ -959,9 +1088,7 @@ class BluetoothService {
     'P0148': 'Fuel Pressure Too Low or High',
     'P0149': 'Fuel Timing Sequence Problem',
     'P0611': 'Fuel Injector Control Module Performance Down',
-    'P2148': 'Fuel Injector Group “A” Supply Voltage High',
-
-    // Air Intake, MAF, MAP, Throttle & Sensors
+    'P2148': 'Fuel Injector Group "A" Supply Voltage High',
     'P0065': 'Air‑Assisted Injector Control Solenoid Valve Problem',
     'P0066': 'Air‑Assisted Injector Control Circuit Low',
     'P0067': 'Air‑Assisted Injector Control Circuit High Voltage',
@@ -971,7 +1098,7 @@ class BluetoothService {
     'P0101': 'Mass Air Flow Circuit Range/Performance',
     'P0102': 'MAF Low Input',
     'P0103': 'MAF High Input',
-    'P0104': 'MAF “A” Circuit Intermittent',
+    'P0104': 'MAF "A" Circuit Intermittent',
     'P0105': 'MAP/Barometric Pressure Circuit Malfunction',
     'P0106': 'MAP/Barometric Pressure Range/Performance',
     'P0107': 'MAP Low Input',
@@ -987,18 +1114,16 @@ class BluetoothService {
     'P0117': 'ECT Low Voltage Output',
     'P0118': 'ECT High Voltage Output',
     'P0119': 'ECT Sensor 1 Malfunction',
-    'P0120': 'Throttle/Pedal Position Sensor “A” Circuit Malfunction',
-    'P0121': 'Throttle/Pedal Position Sensor “A” Range/Performance',
-    'P0122': 'Throttle/Pedal Position “A” Low Voltage',
-    'P0123': 'Throttle/Pedal Position “A” High Voltage',
-    'P0124': 'Throttle/Pedal Position “A” Out of Range',
+    'P0120': 'Throttle/Pedal Position Sensor "A" Circuit Malfunction',
+    'P0121': 'Throttle/Pedal Position Sensor "A" Range/Performance',
+    'P0122': 'Throttle/Pedal Position "A" Low Voltage',
+    'P0123': 'Throttle/Pedal Position "A" High Voltage',
+    'P0124': 'Throttle/Pedal Position "A" Out of Range',
     'P0125': 'Engine Not Reaching Proper Temperature',
     'P0126': 'Low Coolant Temp or Bad Thermostat',
     'P0127': 'High Intake Air Temperature',
     'P0128': 'Engine Temperature Not Staying Hot Enough',
     'P0129': 'Barometric Pressure Too Low',
-
-    // Turbocharger / Supercharger & Boost Control
     'P0033': 'Turbocharger Bypass Valve Control Circuit',
     'P0034': 'Turbocharger Bypass Valve Low Voltage',
     'P0035': 'Turbocharger Bypass Valve High Voltage',
@@ -1008,11 +1133,9 @@ class BluetoothService {
     'P0047': 'Turbo/Supercharger Boost Low Voltage',
     'P0048': 'Turbo/Supercharger Boost High Voltage',
     'P0049': 'Turbo/Supercharger Turbine Overspeed',
-    'P0234': 'Turbocharger/Supercharger “A” Overboost Condition',
+    'P0234': 'Turbocharger/Supercharger "A" Overboost Condition',
     'P0299': 'Turbo or Supercharger Underperformance',
     'P012B': 'Turbo/Supercharger Inlet Pressure Sensor Issue',
-
-    // Oxygen (O2/HO2S) & NOx Sensors
     'P0030': 'Primary HO2S Heater Control Circuit Malfunction',
     'P0031': 'HO2S Heater Low Voltage (B1S1)',
     'P0032': 'HO2S Heater High Voltage (B1S1)',
@@ -1061,17 +1184,11 @@ class BluetoothService {
     'P0151': 'O2 Sensor Low Voltage (B2S1)',
     'P0161': 'O2 Sensor Circuit Malfunction (B2S2)',
     'P2209': 'NOx Sensor Heater Circuit Range/Performance',
-
-    // Air‑Fuel Ratio / Fuel Trim Imbalance
     'P0171': 'System Too Lean (Bank 1)',
     'P0172': 'System Too Rich (Bank 1)',
     'P2188': 'System Too Rich at Idle (Bank 1)',
-
-    // Misfire / Ignition
     'P0300': 'Random/Multiple Cylinder Misfire Detected',
     'P0316': 'Misfire Detected on Startup',
-
-    // Emission & EVAP / EGR / Secondary Air
     'P0401': 'EGR Flow Insufficient',
     'P0440': 'EVAP System Malfunction',
     'P0442': 'EVAP Small Leak Detected',
@@ -1079,50 +1196,14 @@ class BluetoothService {
     'P0452': 'EVAP Low Pressure',
     'P0455': 'EVAP Gross Leak Detected',
     'P0456': 'EVAP Leak Detected',
-    'P2257': 'Secondary Air Injection Control “A” Low Circuit',
+    'P2257': 'Secondary Air Injection Control "A" Low Circuit',
     'P2448': 'Secondary Air Injection High Air Flow (Bank 1)',
-
-    // Transmission & Drivetrain
     'P0700': 'Transmission Control System Malfunction',
     'P0733': 'Incorrect Gear Ratio – 3rd Gear',
-
-    // Brake & Vehicle Control
-    'P0504': 'Brake Switch “A”/”B” Correlation',
+    'P0504': 'Brake Switch "A"/"B" Correlation',
     'P2299': 'Brake Pedal Position Incorrect',
-
-    // Reductant / DEF & Exhaust Temp
     'P2047': 'Reductant Injection Valve Circuit/Open Issue',
     'P242B': 'Exhaust Gas Temperature Sensor Range/Performance (B1S3)',
     'P246F': 'Exhaust Gas Temperature Sensor Bank 1 Sensor 4',
   };
-
-  Future<List<String>> getDTCs() async {
-    final res = await sendAndRead("03");
-    if (res.length < 4 || res.toLowerCase().contains("no")) return [];
-
-    List<String> dtcs = [];
-    try {
-      for (int i = 4; i + 3 < res.length; i += 4) {
-        String code = res.substring(i, i + 4);
-        dtcs.add(_decodeDTC(code));
-      }
-    } catch (_) {}
-    return dtcs;
-  }
-
-  Future<void> clearDTCs() async {
-    await sendAndRead("04");
-  }
-
-  String _decodeDTC(String raw) {
-    if (raw.length < 4) return "Invalid";
-    final b1 = int.parse(raw.substring(0, 2), radix: 16);
-    final b2 = raw.substring(2, 4);
-
-    final type = ['P', 'C', 'B', 'U'][(b1 & 0xC0) >> 6];
-    final digit1 = ((b1 & 0x30) >> 4).toString();
-    final digit2 = (b1 & 0x0F).toRadixString(16).toUpperCase();
-
-    return '$type$digit1$digit2$b2';
-  }
 }

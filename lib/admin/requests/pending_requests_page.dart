@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:dr_cars_fyp/auth/auth_service.dart';
+import 'package:dr_cars_fyp/theme/app_theme.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
 
 class PendingRequestsTab extends StatefulWidget {
@@ -24,7 +26,6 @@ class _PendingRequestsTabState extends State<PendingRequestsTab> {
     _fetchPendingRequests();
   }
 
-  // ================= FETCH PENDING REQUESTS =================
   Future<void> _fetchPendingRequests() async {
     setState(() => _isFetching = true);
     try {
@@ -33,33 +34,33 @@ class _PendingRequestsTabState extends State<PendingRequestsTab> {
           '${_authService.baseUrl}/service-center-requests?status=pending',
         ),
       );
-
       if (response.statusCode == 200) {
         final List data = jsonDecode(response.body);
-        setState(() {
-          _requests = data.cast<Map<String, dynamic>>();
-        });
+        setState(() => _requests = data.cast<Map<String, dynamic>>());
       } else {
         setState(() => _requests = []);
       }
     } catch (e) {
       setState(() => _requests = []);
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error loading requests: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AppColors.error,
+            content: Text(
+              'Error loading requests: $e',
+              style: GoogleFonts.jost(color: Colors.white),
+            ),
+          ),
+        );
       }
     } finally {
       setState(() => _isFetching = false);
     }
   }
 
-  // ================= ACCEPT =================
   Future<void> _acceptRequests() async {
     setState(() => isLoading = true);
-
-    int successCount = 0;
-    int failCount = 0;
+    int successCount = 0, failCount = 0;
 
     for (String requestId in selectedRequestIds) {
       try {
@@ -83,28 +84,26 @@ class _PendingRequestsTabState extends State<PendingRequestsTab> {
       selectedRequestIds.clear();
       isLoading = false;
     });
-
-    await _fetchPendingRequests(); // Refresh list
+    await _fetchPendingRequests();
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
+          backgroundColor: AppColors.success,
           content: Text(
             failCount == 0
-                ? "✅ Accepted $successCount request(s) successfully."
-                : "⚠️ Accepted $successCount, failed $failCount.",
+                ? '✅ Accepted $successCount request(s) successfully.'
+                : '⚠️ Accepted $successCount, failed $failCount.',
+            style: GoogleFonts.jost(color: Colors.white),
           ),
         ),
       );
     }
   }
 
-  // ================= REJECT =================
   Future<void> _rejectRequests() async {
     setState(() => isLoading = true);
-
-    int successCount = 0;
-    int failCount = 0;
+    int successCount = 0, failCount = 0;
 
     for (String requestId in selectedRequestIds) {
       try {
@@ -128,16 +127,17 @@ class _PendingRequestsTabState extends State<PendingRequestsTab> {
       selectedRequestIds.clear();
       isLoading = false;
     });
-
-    await _fetchPendingRequests(); // Refresh list
+    await _fetchPendingRequests();
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
+          backgroundColor: AppColors.error,
           content: Text(
             failCount == 0
-                ? "❌ Rejected $successCount request(s)."
-                : "⚠️ Rejected $successCount, failed $failCount.",
+                ? '❌ Rejected $successCount request(s).'
+                : '⚠️ Rejected $successCount, failed $failCount.',
+            style: GoogleFonts.jost(color: Colors.white),
           ),
         ),
       );
@@ -147,7 +147,9 @@ class _PendingRequestsTabState extends State<PendingRequestsTab> {
   @override
   Widget build(BuildContext context) {
     if (_isFetching) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.gold),
+      );
     }
 
     if (_requests.isEmpty) {
@@ -155,20 +157,25 @@ class _PendingRequestsTabState extends State<PendingRequestsTab> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.inbox, size: 60, color: Colors.grey),
+            const Icon(Icons.inbox, size: 56, color: AppColors.textMuted),
             const SizedBox(height: 12),
-            const Text(
-              "No pending requests.",
-              style: TextStyle(color: Colors.grey),
+            Text(
+              'No pending requests.',
+              style: GoogleFonts.jost(color: AppColors.textMuted, fontSize: 14),
             ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
+            const SizedBox(height: 20),
+            OutlinedButton.icon(
               onPressed: _fetchPendingRequests,
-              icon: const Icon(Icons.refresh),
-              label: const Text("Refresh"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black,
-                foregroundColor: Colors.white,
+              icon: const Icon(Icons.refresh, color: AppColors.gold),
+              label: Text(
+                'Refresh',
+                style: GoogleFonts.jost(color: AppColors.gold),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: AppColors.borderGold),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
             ),
           ],
@@ -178,20 +185,24 @@ class _PendingRequestsTabState extends State<PendingRequestsTab> {
 
     return Column(
       children: [
-        // Refresh button
+        // ── Header ──────────────────────────────────────────────────────
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                "${_requests.length} pending request(s)",
-                style: const TextStyle(fontWeight: FontWeight.bold),
+                '${_requests.length} pending request(s)',
+                style: GoogleFonts.jost(
+                  color: AppColors.textSecondary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
               IconButton(
-                icon: const Icon(Icons.refresh),
+                icon: const Icon(Icons.refresh, color: AppColors.gold),
                 onPressed: _fetchPendingRequests,
-                tooltip: "Refresh",
+                tooltip: 'Refresh',
               ),
             ],
           ),
@@ -199,180 +210,317 @@ class _PendingRequestsTabState extends State<PendingRequestsTab> {
 
         Expanded(
           child: ListView(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
             children:
                 _requests.map((data) {
-                  final docId = data["_id"]?.toString() ?? '';
+                  final docId = data['_id']?.toString() ?? '';
                   if (docId.isEmpty) return const SizedBox.shrink();
-
                   final isSelected = selectedRequestIds.contains(docId);
 
-                  return Card(
-                    margin: const EdgeInsets.symmetric(vertical: 6),
-                    elevation: 3,
-                    child: ExpansionTile(
-                      leading: Checkbox(
-                        value: isSelected,
-                        activeColor: Colors.black,
-                        onChanged: (value) {
-                          setState(() {
-                            if (value == true) {
-                              selectedRequestIds.add(docId);
-                            } else {
-                              selectedRequestIds.remove(docId);
-                            }
-                          });
-                        },
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceDark,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color:
+                            isSelected ? AppColors.gold : AppColors.borderGold,
+                        width: isSelected ? 1.5 : 1,
                       ),
-                      title: Text(
-                        data["serviceCenterName"]?.toString() ?? "Unnamed",
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: Text(
-                        "Owner: ${data["ownerName"]?.toString() ?? "N/A"}",
-                      ),
-                      children: [
-                        _infoTile(Icons.email, "Email", data["email"]),
-                        _infoTile(Icons.person, "Username", data["username"]),
-                        _infoTile(Icons.badge, "NIC", data["nic"]),
-                        _infoTile(
-                          Icons.description,
-                          "Reg. Cert. No",
-                          data["regNumber"],
-                        ),
-                        _infoTile(
-                          Icons.location_on,
-                          "Address",
-                          data["address"],
-                        ),
-                        _infoTile(Icons.phone, "Contact", data["contact"]),
-                        _infoTile(Icons.location_city, "City", data["city"]),
-                        _infoTile(Icons.notes, "Notes", data["notes"]),
-                        const SizedBox(height: 8),
-
-                        // Per-item quick action buttons
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: OutlinedButton.icon(
-                                  onPressed:
-                                      isLoading
-                                          ? null
-                                          : () async {
-                                            setState(() {
-                                              if (!selectedRequestIds.contains(
-                                                docId,
-                                              )) {
-                                                selectedRequestIds.add(docId);
-                                              }
-                                            });
-                                            await _acceptRequests();
-                                          },
-                                  icon: const Icon(
-                                    Icons.check,
-                                    color: Colors.green,
-                                  ),
-                                  label: const Text(
-                                    "Accept",
-                                    style: TextStyle(color: Colors.green),
-                                  ),
-                                  style: OutlinedButton.styleFrom(
-                                    side: const BorderSide(color: Colors.green),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: OutlinedButton.icon(
-                                  onPressed:
-                                      isLoading
-                                          ? null
-                                          : () async {
-                                            setState(() {
-                                              if (!selectedRequestIds.contains(
-                                                docId,
-                                              )) {
-                                                selectedRequestIds.add(docId);
-                                              }
-                                            });
-                                            await _rejectRequests();
-                                          },
-                                  icon: const Icon(
-                                    Icons.close,
-                                    color: Colors.red,
-                                  ),
-                                  label: const Text(
-                                    "Reject",
-                                    style: TextStyle(color: Colors.red),
-                                  ),
-                                  style: OutlinedButton.styleFrom(
-                                    side: const BorderSide(color: Colors.red),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.gold.withOpacity(0.05),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
                         ),
                       ],
+                    ),
+                    child: Theme(
+                      data: Theme.of(context).copyWith(
+                        dividerColor: Colors.transparent,
+                        expansionTileTheme: const ExpansionTileThemeData(
+                          backgroundColor: AppColors.surfaceDark,
+                          collapsedBackgroundColor: AppColors.surfaceDark,
+                        ),
+                      ),
+                      child: ExpansionTile(
+                        tilePadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 4,
+                        ),
+                        leading: GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              if (isSelected) {
+                                selectedRequestIds.remove(docId);
+                              } else {
+                                selectedRequestIds.add(docId);
+                              }
+                            });
+                          },
+                          child: Container(
+                            width: 24,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color:
+                                  isSelected
+                                      ? AppColors.gold
+                                      : Colors.transparent,
+                              border: Border.all(
+                                color:
+                                    isSelected
+                                        ? AppColors.gold
+                                        : AppColors.textMuted,
+                                width: 1.5,
+                              ),
+                            ),
+                            child:
+                                isSelected
+                                    ? const Icon(
+                                      Icons.check,
+                                      size: 14,
+                                      color: AppColors.obsidian,
+                                    )
+                                    : null,
+                          ),
+                        ),
+                        title: Text(
+                          data['serviceCenterName']?.toString() ?? 'Unnamed',
+                          style: GoogleFonts.cormorantGaramond(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        subtitle: Text(
+                          'Owner: ${data['ownerName']?.toString() ?? 'N/A'}',
+                          style: GoogleFonts.jost(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        iconColor: AppColors.gold,
+                        collapsedIconColor: AppColors.textSecondary,
+                        children: [
+                          Container(height: 1, color: AppColors.borderGold),
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _infoTile(
+                                  Icons.email_outlined,
+                                  'Email',
+                                  data['email'],
+                                ),
+                                _infoTile(
+                                  Icons.alternate_email,
+                                  'Username',
+                                  data['username'],
+                                ),
+                                _infoTile(
+                                  Icons.badge_outlined,
+                                  'NIC',
+                                  data['nic'],
+                                ),
+                                _infoTile(
+                                  Icons.description_outlined,
+                                  'Reg. Cert. No',
+                                  data['regNumber'],
+                                ),
+                                _infoTile(
+                                  Icons.location_on_outlined,
+                                  'Address',
+                                  data['address'],
+                                ),
+                                _infoTile(
+                                  Icons.phone_outlined,
+                                  'Contact',
+                                  data['contact'],
+                                ),
+                                _infoTile(
+                                  Icons.location_city_outlined,
+                                  'City',
+                                  data['city'],
+                                ),
+                                if (data['notes'] != null &&
+                                    data['notes'].toString().isNotEmpty)
+                                  _infoTile(
+                                    Icons.notes_outlined,
+                                    'Notes',
+                                    data['notes'],
+                                  ),
+                                const SizedBox(height: 16),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: ElevatedButton.icon(
+                                        onPressed:
+                                            isLoading
+                                                ? null
+                                                : () async {
+                                                  setState(() {
+                                                    if (!selectedRequestIds
+                                                        .contains(docId)) {
+                                                      selectedRequestIds.add(
+                                                        docId,
+                                                      );
+                                                    }
+                                                  });
+                                                  await _acceptRequests();
+                                                },
+                                        icon: const Icon(Icons.check, size: 16),
+                                        label: Text(
+                                          'Accept',
+                                          style: GoogleFonts.jost(
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: AppColors.gold,
+                                          foregroundColor: AppColors.obsidian,
+                                          elevation: 0,
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 12,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: OutlinedButton.icon(
+                                        onPressed:
+                                            isLoading
+                                                ? null
+                                                : () async {
+                                                  setState(() {
+                                                    if (!selectedRequestIds
+                                                        .contains(docId)) {
+                                                      selectedRequestIds.add(
+                                                        docId,
+                                                      );
+                                                    }
+                                                  });
+                                                  await _rejectRequests();
+                                                },
+                                        icon: const Icon(Icons.close, size: 16),
+                                        label: Text(
+                                          'Reject',
+                                          style: GoogleFonts.jost(
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                        style: OutlinedButton.styleFrom(
+                                          foregroundColor: AppColors.error,
+                                          side: const BorderSide(
+                                            color: AppColors.error,
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 12,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   );
                 }).toList(),
           ),
         ),
 
-        // Bulk action buttons (shown when multiple selected)
+        // ── Bulk actions bar ────────────────────────────────────────────
         if (selectedRequestIds.length > 1)
           Container(
-            color: Colors.grey[100],
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: AppColors.obsidian,
+              border: const Border(
+                top: BorderSide(color: AppColors.borderGold),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, -4),
+                ),
+              ],
+            ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 Text(
-                  "${selectedRequestIds.length} selected",
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  '${selectedRequestIds.length} selected',
+                  style: GoogleFonts.jost(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
+                const Spacer(),
                 ElevatedButton.icon(
                   onPressed: isLoading ? null : _acceptRequests,
                   icon:
                       isLoading
                           ? const SizedBox(
-                            width: 16,
-                            height: 16,
+                            width: 14,
+                            height: 14,
                             child: CircularProgressIndicator(
-                              color: Colors.white,
+                              color: AppColors.obsidian,
                               strokeWidth: 2,
                             ),
                           )
-                          : const Icon(Icons.check),
-                  label: const Text("Accept All"),
+                          : const Icon(Icons.check, size: 16),
+                  label: Text(
+                    'Accept All',
+                    style: GoogleFonts.jost(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
+                  ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
-                    foregroundColor: Colors.white,
+                    backgroundColor: AppColors.gold,
+                    foregroundColor: AppColors.obsidian,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                 ),
-                ElevatedButton.icon(
+                const SizedBox(width: 10),
+                OutlinedButton.icon(
                   onPressed: isLoading ? null : _rejectRequests,
-                  icon:
-                      isLoading
-                          ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                          : const Icon(Icons.close),
-                  label: const Text("Reject All"),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.redAccent,
-                    foregroundColor: Colors.white,
+                  icon: const Icon(Icons.close, size: 16),
+                  label: Text(
+                    'Reject All',
+                    style: GoogleFonts.jost(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.error,
+                    side: const BorderSide(color: AppColors.error),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                 ),
               ],
@@ -383,17 +531,32 @@ class _PendingRequestsTabState extends State<PendingRequestsTab> {
   }
 
   Widget _infoTile(IconData icon, String title, dynamic value) {
-    return ListTile(
-      leading: Icon(icon, size: 20, color: Colors.grey[600]),
-      title: Text(
-        title,
-        style: const TextStyle(fontSize: 12, color: Colors.grey),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 16, color: AppColors.gold),
+          const SizedBox(width: 10),
+          Text(
+            '$title: ',
+            style: GoogleFonts.jost(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value?.toString() ?? 'N/A',
+              style: GoogleFonts.jost(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+        ],
       ),
-      subtitle: Text(
-        value?.toString() ?? "N/A",
-        style: const TextStyle(fontSize: 14, color: Colors.black),
-      ),
-      dense: true,
     );
   }
 }

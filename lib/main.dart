@@ -8,12 +8,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:dr_cars_fyp/providers/locale_provider.dart';
 import 'package:dr_cars_fyp/theme/app_theme.dart';
+import 'package:dr_cars_fyp/service/document_notification_service.dart';
 
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
+  await DocumentNotificationService.init();
   OneSignal.initialize("fd5e46c1-2563-4dd9-8b53-931517023f89");
 
   final prefs = await SharedPreferences.getInstance();
@@ -62,27 +63,30 @@ class _AuthCheckState extends State<AuthCheck> {
 
   Future<void> _checkUser() async {
     final user = await _authService.getCurrentUser();
-    Widget screen = const Welcome();
-
-    if (user != null) {
-      final type =
-          user['userType']?.toString() ??
-          user['User Type']?.toString() ??
-          'User';
-      if (type == "Vehicle Owner") {
-        screen = const DashboardScreen();
-      } else if (type == "Service Center") {
-        screen = const HomeScreen();
-      } else if (type == "App Admin") {
-        screen = const ServiceCenterApprovalPage();
-      }
-    }
+    final type =
+        user?['userType']?.toString() ??
+        user?['User Type']?.toString() ??
+        'User';
+    final screen = _screenForUserType(type);
 
     if (!mounted) return;
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => screen),
     );
+  }
+
+  Widget _screenForUserType(String type) {
+    switch (type) {
+      case 'Vehicle Owner':
+        return const DashboardScreen();
+      case 'Service Center':
+        return const HomeScreen();
+      case 'App Admin':
+        return const ServiceCenterApprovalPage();
+      default:
+        return const Welcome();
+    }
   }
 
   @override

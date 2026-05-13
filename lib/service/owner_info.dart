@@ -44,12 +44,9 @@ class _OwnerInfoPageState extends State<OwnerInfo> {
       'Aqua',
       'Axio',
       'Vitz',
-      'Allion',
-      'Premio',
-      'LandCruiser',
-      'Hilux',
       'Prius',
-      'Rush',
+      'Crown',
+      'Fortuner',
     ],
     'Nissan': [
       'Sunny',
@@ -57,62 +54,61 @@ class _OwnerInfoPageState extends State<OwnerInfo> {
       'Juke',
       'Note',
       'Teana',
-      'Skyline',
-      'Patrol',
-      'Navara',
-      'Qashqai',
-      'Murano',
-      'Titan',
-      'Frontier',
-      'Sylphy',
-      'Fairlady Z',
-      'Armada',
-      'Sentra',
-      'Leaf',
       'GT-R',
+      'Sentra',
+      'Patrol',
+      '370Z',
     ],
     'Honda': [
       'Civic',
       'Accord',
       'CR-V',
-      'Pilot',
       'Fit',
       'Vezel',
-      'Grace',
-      'Freed',
-      'Insight',
-      'HR-V',
-      'BR-V',
-      'Jazz',
       'City',
-      'Legend',
       'Odyssey',
-      'Shuttle',
-      'Stepwgn',
-      'Acty',
-      'S660',
-      'NSX',
+      'Freed',
     ],
     'Suzuki': [
       'Alto',
       'Wagon R',
       'Swift',
-      'Dzire',
       'Baleno',
+      'Vitara',
       'Ertiga',
-      'Celerio',
-      'S-Presso',
-      'Vitara Brezza',
-      'Grand Vitara',
-      'Ciaz',
-      'Ignis',
-      'XL6',
       'Jimny',
-      'Fronx',
-      'Maruti 800',
-      'Esteem',
-      'Kizashi',
-      'A-Star',
+      'Estilo',
+    ],
+    'Mazda': [
+      'Mazda3',
+      'Mazda6',
+      'CX-3',
+      'CX-5',
+      'CX-9',
+      'BT-50',
+      'RX-8',
+      'MX-5',
+    ],
+    'BMW': ['320i', 'X1', 'X3', 'X5', 'M3', 'Z4', '530e', '740i'],
+    'Kia': [
+      'Picanto',
+      'Rio',
+      'Sportage',
+      'Seltos',
+      'Sorento',
+      'Cerato',
+      'Stinger',
+      'Carnival',
+    ],
+    'Hyundai': [
+      'i10',
+      'i20',
+      'Elantra',
+      'Tucson',
+      'Santa Fe',
+      'Accent',
+      'Venue',
+      'Creta',
     ],
   };
 
@@ -150,9 +146,14 @@ class _OwnerInfoPageState extends State<OwnerInfo> {
   }
 
   void _populateFields(Map<String, dynamic> data) {
+    final brand = data['selectedBrand']?.toString();
+    final model = data['selectedModel']?.toString();
     setState(() {
-      selectedBrand = data['selectedBrand'] ?? 'Toyota';
-      selectedModel = data['selectedModel'] ?? vehicleModels['Toyota']?[0];
+      selectedBrand = vehicleModels.containsKey(brand) ? brand : null;
+      selectedModel =
+          selectedBrand != null && vehicleModels[selectedBrand]!.contains(model)
+              ? model
+              : null;
       vehicleYearController.text =
           data['year']?.toString() ?? data['manufactureYear']?.toString() ?? '';
       userIdController.text =
@@ -163,21 +164,8 @@ class _OwnerInfoPageState extends State<OwnerInfo> {
   Future<void> _fetchUserData() async {
     if (userIdController.text.isEmpty) return;
     final userDoc = await _authService.getUserById(userIdController.text);
-    if (userDoc != null) {
-      _userDetails(userDoc);
-    } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: AppColors.error,
-            content: Text(
-              'User not found in database.',
-              style: GoogleFonts.jost(color: Colors.white),
-            ),
-          ),
-        );
-      }
-    }
+    if (userDoc != null) _userDetails(userDoc);
+    // silently ignore if user not found — fields stay blank for service center to fill
   }
 
   void _userDetails(Map<String, dynamic> data) {
@@ -193,68 +181,91 @@ class _OwnerInfoPageState extends State<OwnerInfo> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => isLoading = true);
 
-    final isVehicleExisting = widget.vehicleData != null;
-
-    Map<String, dynamic> userData = {
+    final Map<String, dynamic> userData = {
       'Name': nameController.text.trim(),
       'Address': addressController.text.trim(),
       'Contact': contactController.text.trim(),
       'Email': emailController.text.trim(),
     };
 
-    Map<String, dynamic> vehicleData = {
+    final Map<String, dynamic> vehiclePayload = {
       'vehicleNumber': widget.vehicleNumber,
       'selectedBrand': selectedBrand,
       'selectedModel': selectedModel,
       'year': vehicleYearController.text.trim(),
-      'uid': userIdController.text,
-      'userId': userIdController.text,
       'mileage': '100000',
       'vehicleType': 'Car',
       'vehiclePhotoUrl': null,
       'lastUpdated': DateTime.now().toIso8601String(),
     };
 
-    if (isVehicleExisting) {
-      final String uid =
-          widget.vehicleData?['uid']?.toString() ??
-          widget.vehicleData?['userId']?.toString() ??
-          '';
+    try {
+      String uid = userIdController.text.trim();
+
       if (uid.isNotEmpty) {
-        await _authService.updateUserById(uid, userData);
-        await _authService.upsertVehicleByUserId(uid, vehicleData);
+        // Vehicle has a linked uid — try to update the user.
+        // If the user record is missing (orphaned vehicle), create them instead.
+        try {
+          await _authService.updateUserById(uid, userData);
+        } catch (_) {
+          // User not found — create a fresh user record
+          final created = await _authService.createUserById({
+            ...userData,
+            'uid': uid,
+            'userType': 'Vehicle Owner',
+            'createdAt': DateTime.now().toIso8601String(),
+          });
+          uid =
+              created['uid']?.toString() ??
+              created['id']?.toString() ??
+              created['_id']?.toString() ??
+              uid;
+          userIdController.text = uid;
+        }
+      } else {
+        // Completely new — create user first
+        final created = await _authService.createUserById({
+          ...userData,
+          'userType': 'Vehicle Owner',
+          'createdAt': DateTime.now().toIso8601String(),
+        });
+        uid =
+            created['uid']?.toString() ??
+            created['id']?.toString() ??
+            created['_id']?.toString() ??
+            '';
+        userIdController.text = uid;
       }
-    } else {
-      final createdUser = await _authService.createUserById({
-        ...userData,
-        'userType': 'Vehicle Owner',
-        'createdAt': DateTime.now().toIso8601String(),
+
+      // Always upsert the vehicle with the resolved uid
+      await _authService.upsertVehicleByUserId(uid, {
+        ...vehiclePayload,
+        'uid': uid,
+        'userId': uid,
       });
 
-      final newUID =
-          createdUser['uid']?.toString() ??
-          createdUser['id']?.toString() ??
-          createdUser['_id']?.toString() ??
-          '';
-
-      userIdController.text = newUID;
-
-      await _authService.upsertVehicleByUserId(newUID, {
-        ...vehicleData,
-        'uid': newUID,
-        'userId': newUID,
-        'createdAt': DateTime.now().toIso8601String(),
-      });
-    }
-
-    if (mounted) {
-      setState(() => isLoading = false);
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => AddService(vehicleNumber: widget.vehicleNumber),
-        ),
-      );
+      if (mounted) {
+        setState(() => isLoading = false);
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => AddService(vehicleNumber: widget.vehicleNumber),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AppColors.error,
+            content: Text(
+              'Error: ${e.toString()}',
+              style: GoogleFonts.jost(color: Colors.white),
+            ),
+          ),
+        );
+      }
     }
   }
 
@@ -421,7 +432,6 @@ class _OwnerInfoPageState extends State<OwnerInfo> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Logo ───────────────────────────────────────────────────
               Center(
                 child: Container(
                   width: 90,
@@ -448,7 +458,6 @@ class _OwnerInfoPageState extends State<OwnerInfo> {
               ),
               const SizedBox(height: 24),
 
-              // ── Owner Info ────────────────────────────────────────────
               Text(
                 'Owner Information',
                 style: GoogleFonts.cormorantGaramond(
@@ -464,7 +473,6 @@ class _OwnerInfoPageState extends State<OwnerInfo> {
               _buildTextField(contactController, 'Contact'),
               _buildTextField(emailController, 'Email', isEmail: true),
 
-              // ── Vehicle Info ──────────────────────────────────────────
               Text(
                 'Vehicle Information',
                 style: GoogleFonts.cormorantGaramond(
@@ -484,7 +492,7 @@ class _OwnerInfoPageState extends State<OwnerInfo> {
                 (value) {
                   setState(() {
                     selectedBrand = value;
-                    selectedModel = vehicleModels[selectedBrand]?.first;
+                    selectedModel = null;
                   });
                 },
               ),
@@ -494,14 +502,11 @@ class _OwnerInfoPageState extends State<OwnerInfo> {
                   'Model',
                   vehicleModels[selectedBrand] ?? [],
                   selectedModel,
-                  (value) {
-                    setState(() => selectedModel = value);
-                  },
+                  (value) => setState(() => selectedModel = value),
                 ),
 
               const SizedBox(height: 8),
 
-              // ── Continue Button ───────────────────────────────────────
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(

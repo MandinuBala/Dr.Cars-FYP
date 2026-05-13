@@ -31,12 +31,14 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
 
   final List<String> vehicleModels = [
     'Car',
+    'SUV',
     'Van',
     'Jeep',
     'Truck',
     'Motorcycle',
     'Three-Wheeler',
     'Bus',
+    'Pickup',
   ];
 
   final List<String> serviceTypes = [
@@ -349,7 +351,9 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
                 vehicleDoc['vehicleNumber']?.toString() ??
                 vehicleDoc['plateNumber']?.toString() ??
                 '';
-            _selectedModel = vehicleDoc['vehicleType']?.toString() ?? '';
+            final loadedModel = vehicleDoc['vehicleType']?.toString() ?? '';
+            _selectedModel =
+                vehicleModels.contains(loadedModel) ? loadedModel : null;
             _isLoading = false;
           });
         } else {

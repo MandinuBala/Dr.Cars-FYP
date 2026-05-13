@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:dr_cars_fyp/auth/auth_service.dart';
+import 'package:dr_cars_fyp/theme/app_theme.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
 
 class RejectedRequestsTab extends StatefulWidget {
@@ -30,12 +32,9 @@ class _RejectedRequestsTabState extends State<RejectedRequestsTab> {
           '${_authService.baseUrl}/service-center-requests?status=rejected',
         ),
       );
-
       if (response.statusCode == 200) {
         final List data = jsonDecode(response.body);
-        setState(() {
-          _requests = data.cast<Map<String, dynamic>>();
-        });
+        setState(() => _requests = data.cast<Map<String, dynamic>>());
       } else {
         setState(() => _requests = []);
       }
@@ -43,7 +42,13 @@ class _RejectedRequestsTabState extends State<RejectedRequestsTab> {
       setState(() => _requests = []);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading rejected requests: $e')),
+          SnackBar(
+            backgroundColor: AppColors.error,
+            content: Text(
+              'Error loading rejected requests: $e',
+              style: GoogleFonts.jost(color: Colors.white),
+            ),
+          ),
         );
       }
     } finally {
@@ -59,12 +64,17 @@ class _RejectedRequestsTabState extends State<RejectedRequestsTab> {
         ),
         headers: {'Content-Type': 'application/json'},
       );
-
       if (response.statusCode >= 200 && response.statusCode < 300) {
-        await _fetchRejectedRequests(); // Refresh
+        await _fetchRejectedRequests();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("✅ Moved back to pending.")),
+            SnackBar(
+              backgroundColor: AppColors.success,
+              content: Text(
+                '✅ Moved back to pending.',
+                style: GoogleFonts.jost(color: Colors.white),
+              ),
+            ),
           );
         }
       } else {
@@ -72,35 +82,67 @@ class _RejectedRequestsTabState extends State<RejectedRequestsTab> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error restoring request: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AppColors.error,
+            content: Text(
+              'Error restoring request: $e',
+              style: GoogleFonts.jost(color: Colors.white),
+            ),
+          ),
+        );
       }
     }
   }
 
   Future<void> _deleteRequest(String id) async {
-    // Show confirmation dialog first
     final confirmed = await showDialog<bool>(
       context: context,
       builder:
           (context) => AlertDialog(
-            title: const Text("Delete Request"),
-            content: const Text(
-              "Are you sure you want to permanently delete this request? This cannot be undone.",
+            backgroundColor: AppColors.surfaceDark,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: const BorderSide(color: AppColors.borderGold),
+            ),
+            title: Text(
+              'Delete Request',
+              style: GoogleFonts.cormorantGaramond(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            content: Text(
+              'Are you sure you want to permanently delete this request? This cannot be undone.',
+              style: GoogleFonts.jost(
+                color: AppColors.textSecondary,
+                fontSize: 14,
+                height: 1.5,
+              ),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text("Cancel"),
+                child: Text(
+                  'Cancel',
+                  style: GoogleFonts.jost(color: AppColors.textSecondary),
+                ),
               ),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context, true),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
+                  backgroundColor: AppColors.error,
                   foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
-                child: const Text("Delete"),
+                child: Text(
+                  'Delete',
+                  style: GoogleFonts.jost(fontWeight: FontWeight.w600),
+                ),
               ),
             ],
           ),
@@ -112,12 +154,17 @@ class _RejectedRequestsTabState extends State<RejectedRequestsTab> {
       final response = await http.delete(
         Uri.parse('${_authService.baseUrl}/service-center-requests/$id'),
       );
-
       if (response.statusCode >= 200 && response.statusCode < 300) {
-        await _fetchRejectedRequests(); // Refresh
+        await _fetchRejectedRequests();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("🗑️ Request deleted permanently.")),
+            SnackBar(
+              backgroundColor: AppColors.success,
+              content: Text(
+                '🗑️ Request deleted permanently.',
+                style: GoogleFonts.jost(color: Colors.white),
+              ),
+            ),
           );
         }
       } else {
@@ -125,9 +172,15 @@ class _RejectedRequestsTabState extends State<RejectedRequestsTab> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error deleting request: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AppColors.error,
+            content: Text(
+              'Error deleting request: $e',
+              style: GoogleFonts.jost(color: Colors.white),
+            ),
+          ),
+        );
       }
     }
   }
@@ -135,7 +188,9 @@ class _RejectedRequestsTabState extends State<RejectedRequestsTab> {
   @override
   Widget build(BuildContext context) {
     if (_isFetching) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.gold),
+      );
     }
 
     if (_requests.isEmpty) {
@@ -145,22 +200,27 @@ class _RejectedRequestsTabState extends State<RejectedRequestsTab> {
           children: [
             const Icon(
               Icons.check_circle_outline,
-              size: 60,
-              color: Colors.grey,
+              size: 56,
+              color: AppColors.textMuted,
             ),
             const SizedBox(height: 12),
-            const Text(
-              "No rejected requests.",
-              style: TextStyle(color: Colors.grey),
+            Text(
+              'No rejected requests.',
+              style: GoogleFonts.jost(color: AppColors.textMuted, fontSize: 14),
             ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
+            const SizedBox(height: 20),
+            OutlinedButton.icon(
               onPressed: _fetchRejectedRequests,
-              icon: const Icon(Icons.refresh),
-              label: const Text("Refresh"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black,
-                foregroundColor: Colors.white,
+              icon: const Icon(Icons.refresh, color: AppColors.gold),
+              label: Text(
+                'Refresh',
+                style: GoogleFonts.jost(color: AppColors.gold),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: AppColors.borderGold),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
             ),
           ],
@@ -170,19 +230,24 @@ class _RejectedRequestsTabState extends State<RejectedRequestsTab> {
 
     return Column(
       children: [
+        // ── Header ──────────────────────────────────────────────────────
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                "${_requests.length} rejected request(s)",
-                style: const TextStyle(fontWeight: FontWeight.bold),
+                '${_requests.length} rejected request(s)',
+                style: GoogleFonts.jost(
+                  color: AppColors.textSecondary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
               IconButton(
-                icon: const Icon(Icons.refresh),
+                icon: const Icon(Icons.refresh, color: AppColors.gold),
                 onPressed: _fetchRejectedRequests,
-                tooltip: "Refresh",
+                tooltip: 'Refresh',
               ),
             ],
           ),
@@ -190,88 +255,215 @@ class _RejectedRequestsTabState extends State<RejectedRequestsTab> {
 
         Expanded(
           child: ListView.builder(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
             itemCount: _requests.length,
             itemBuilder: (context, index) {
               final data = _requests[index];
-              final id = data["_id"]?.toString() ?? '';
+              final id = data['_id']?.toString() ?? '';
               if (id.isEmpty) return const SizedBox.shrink();
 
-              return Card(
-                margin: const EdgeInsets.symmetric(vertical: 6),
-                elevation: 3,
-                child: ExpansionTile(
-                  leading: const CircleAvatar(
-                    backgroundColor: Colors.red,
-                    radius: 14,
-                    child: Icon(Icons.close, color: Colors.white, size: 16),
-                  ),
-                  title: Text(
-                    data["serviceCenterName"]?.toString() ?? "Unnamed",
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Text(
-                    "Owner: ${data["ownerName"]?.toString() ?? "N/A"}",
-                  ),
-                  children: [
-                    _infoTile(Icons.email, "Email", data["email"]),
-                    _infoTile(Icons.person, "Username", data["username"]),
-                    _infoTile(Icons.badge, "NIC", data["nic"]),
-                    _infoTile(
-                      Icons.description,
-                      "Reg. Cert. No",
-                      data["regNumber"],
-                    ),
-                    _infoTile(Icons.location_on, "Address", data["address"]),
-                    _infoTile(Icons.phone, "Contact", data["contact"]),
-                    _infoTile(Icons.location_city, "City", data["city"]),
-                    _infoTile(Icons.notes, "Notes", data["notes"]),
-                    const SizedBox(height: 8),
-
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: () => _restoreRequest(id),
-                              icon: const Icon(
-                                Icons.restore,
-                                color: Colors.black,
-                              ),
-                              label: const Text(
-                                "Restore to Pending",
-                                style: TextStyle(color: Colors.black),
-                              ),
-                              style: OutlinedButton.styleFrom(
-                                side: const BorderSide(color: Colors.black),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: () => _deleteRequest(id),
-                              icon: const Icon(
-                                Icons.delete_forever,
-                                color: Colors.red,
-                              ),
-                              label: const Text(
-                                "Delete",
-                                style: TextStyle(color: Colors.red),
-                              ),
-                              style: OutlinedButton.styleFrom(
-                                side: const BorderSide(color: Colors.red),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceDark,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.borderGold),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.gold.withOpacity(0.04),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
                     ),
                   ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // ── Red left strip ──────────────────────────
+                        Container(width: 4, color: AppColors.error),
+
+                        // ── Card content ────────────────────────────
+                        Expanded(
+                          child: Theme(
+                            data: Theme.of(context).copyWith(
+                              dividerColor: Colors.transparent,
+                              expansionTileTheme: const ExpansionTileThemeData(
+                                backgroundColor: AppColors.surfaceDark,
+                                collapsedBackgroundColor: AppColors.surfaceDark,
+                              ),
+                            ),
+                            child: ExpansionTile(
+                              tilePadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 4,
+                              ),
+                              leading: Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  color: AppColors.error.withOpacity(0.1),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: AppColors.error),
+                                ),
+                                child: const Icon(
+                                  Icons.close,
+                                  color: AppColors.error,
+                                  size: 16,
+                                ),
+                              ),
+                              title: Text(
+                                data['serviceCenterName']?.toString() ??
+                                    'Unnamed',
+                                style: GoogleFonts.cormorantGaramond(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              subtitle: Text(
+                                'Owner: ${data['ownerName']?.toString() ?? 'N/A'}',
+                                style: GoogleFonts.jost(
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                              iconColor: AppColors.gold,
+                              collapsedIconColor: AppColors.textSecondary,
+                              children: [
+                                Container(
+                                  height: 1,
+                                  color: AppColors.borderGold,
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      _infoTile(
+                                        Icons.email_outlined,
+                                        'Email',
+                                        data['email'],
+                                      ),
+                                      _infoTile(
+                                        Icons.alternate_email,
+                                        'Username',
+                                        data['username'],
+                                      ),
+                                      _infoTile(
+                                        Icons.badge_outlined,
+                                        'NIC',
+                                        data['nic'],
+                                      ),
+                                      _infoTile(
+                                        Icons.description_outlined,
+                                        'Reg. Cert. No',
+                                        data['regNumber'],
+                                      ),
+                                      _infoTile(
+                                        Icons.location_on_outlined,
+                                        'Address',
+                                        data['address'],
+                                      ),
+                                      _infoTile(
+                                        Icons.phone_outlined,
+                                        'Contact',
+                                        data['contact'],
+                                      ),
+                                      _infoTile(
+                                        Icons.location_city_outlined,
+                                        'City',
+                                        data['city'],
+                                      ),
+                                      if (data['notes'] != null &&
+                                          data['notes'].toString().isNotEmpty)
+                                        _infoTile(
+                                          Icons.notes_outlined,
+                                          'Notes',
+                                          data['notes'],
+                                        ),
+                                      const SizedBox(height: 16),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: ElevatedButton.icon(
+                                              onPressed:
+                                                  () => _restoreRequest(id),
+                                              icon: const Icon(
+                                                Icons.restore,
+                                                size: 16,
+                                              ),
+                                              label: Text(
+                                                'Restore',
+                                                style: GoogleFonts.jost(
+                                                  fontWeight: FontWeight.w700,
+                                                  fontSize: 13,
+                                                ),
+                                              ),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: AppColors.gold,
+                                                foregroundColor:
+                                                    AppColors.obsidian,
+                                                elevation: 0,
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      vertical: 12,
+                                                    ),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: OutlinedButton.icon(
+                                              onPressed:
+                                                  () => _deleteRequest(id),
+                                              icon: const Icon(
+                                                Icons.delete_forever,
+                                                size: 16,
+                                              ),
+                                              label: Text(
+                                                'Delete',
+                                                style: GoogleFonts.jost(
+                                                  fontWeight: FontWeight.w700,
+                                                  fontSize: 13,
+                                                ),
+                                              ),
+                                              style: OutlinedButton.styleFrom(
+                                                foregroundColor:
+                                                    AppColors.error,
+                                                side: const BorderSide(
+                                                  color: AppColors.error,
+                                                ),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      vertical: 12,
+                                                    ),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               );
             },
@@ -282,17 +474,32 @@ class _RejectedRequestsTabState extends State<RejectedRequestsTab> {
   }
 
   Widget _infoTile(IconData icon, String title, dynamic value) {
-    return ListTile(
-      leading: Icon(icon, size: 20, color: Colors.grey[600]),
-      title: Text(
-        title,
-        style: const TextStyle(fontSize: 12, color: Colors.grey),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 16, color: AppColors.gold),
+          const SizedBox(width: 10),
+          Text(
+            '$title: ',
+            style: GoogleFonts.jost(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value?.toString() ?? 'N/A',
+              style: GoogleFonts.jost(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+        ],
       ),
-      subtitle: Text(
-        value?.toString() ?? "N/A",
-        style: const TextStyle(fontSize: 14, color: Colors.black),
-      ),
-      dense: true,
     );
   }
 }

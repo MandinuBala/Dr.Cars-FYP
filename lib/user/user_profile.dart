@@ -1,12 +1,9 @@
+// lib/user/user_profile.dart
 import 'dart:convert';
 import 'package:dr_cars_fyp/auth/auth_service.dart';
-import 'package:dr_cars_fyp/service/service_history.dart';
 import 'package:dr_cars_fyp/settings/Settings.dart';
-import 'package:dr_cars_fyp/map/mapscreen.dart';
-import 'package:dr_cars_fyp/service/service_history.dart';
 import 'package:flutter/material.dart';
 import 'package:dr_cars_fyp/user/main_dashboard.dart';
-import 'package:dr_cars_fyp/obd/OBD2.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dr_cars_fyp/utils/vehicle_image_helper.dart';
@@ -15,6 +12,11 @@ import 'package:dr_cars_fyp/providers/locale_provider.dart';
 import 'package:dr_cars_fyp/theme/app_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:dr_cars_fyp/widgets/app_bottom_nav.dart';
+import 'package:dr_cars_fyp/user/document_scan_screen.dart';
+import 'package:dr_cars_fyp/service/document_service.dart';
+import 'package:dr_cars_fyp/service/document_notification_service.dart';
+import 'package:dr_cars_fyp/models/vehicle_document.dart';
+import 'package:dr_cars_fyp/user/driving_licence_screen.dart';
 
 int _selectedIndex = 4;
 
@@ -40,8 +42,166 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _isLoading = false;
   String? _vehiclePhotoUrl;
   bool _isInitialSetup = true;
-  bool _isExpanded = false;
   String? _currentUserId;
+
+  Widget _buildDocumentsSection() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surfaceDark,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.borderGold),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.gold.withOpacity(0.06),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'My Documents',
+                style: GoogleFonts.cormorantGaramond(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              GestureDetector(
+                onTap: () async {
+                  await Future.delayed(const Duration(milliseconds: 400));
+                  if (!mounted) return;
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder:
+                          (_) => DrivingLicenceScreen(
+                            userId: _currentUserId!,
+                            userName: nameController.text,
+                          ),
+                    ),
+                  );
+                },
+
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.add_circle_outline,
+                      color: AppColors.gold,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Add',
+                      style: GoogleFonts.jost(
+                        color: AppColors.gold,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          Container(
+            height: 1,
+            margin: const EdgeInsets.symmetric(vertical: 12),
+            color: AppColors.borderGold,
+          ),
+          GestureDetector(
+            onTap: () async {
+              await Future.delayed(const Duration(milliseconds: 400));
+              if (!mounted) return;
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder:
+                      (_) => DrivingLicenceScreen(
+                        userId: _currentUserId!,
+                        userName: nameController.text,
+                      ),
+                ),
+              );
+            },
+
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.gold.withOpacity(0.15),
+                    AppColors.surfaceElevated,
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppColors.gold.withOpacity(0.5)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.credit_card,
+                    color: AppColors.gold,
+                    size: 28,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Virtual Driving Licence',
+                          style: GoogleFonts.jost(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                          ),
+                        ),
+                        Text(
+                          'View & store your driving licence card',
+                          style: GoogleFonts.jost(
+                            color: AppColors.textSecondary,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(
+                    Icons.arrow_forward_ios,
+                    color: AppColors.gold,
+                    size: 14,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (_documents.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                'No documents added yet. Tap Add to scan your license or insurance.',
+                style: GoogleFonts.jost(
+                  color: AppColors.textMuted,
+                  fontSize: 12,
+                ),
+              ),
+            )
+          else
+            ..._documents.map((doc) => _documentCard(doc)),
+        ],
+      ),
+    );
+  }
+
+  // ── Step 13: documents state ───────────────────────────────────────────
+  List<VehicleDocument> _documents = [];
 
   final Map<String, List<String>> vehicleModels = {
     'Toyota': [
@@ -128,19 +288,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadUserData();
   }
 
+  @override
+  void dispose() {
+    nameController.dispose();
+    emailController.dispose();
+    vehicleNumberController.dispose();
+    mileageController.dispose();
+    yearController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadUserData() async {
     setState(() => _isLoading = true);
-
     try {
-      // Step 1: Read directly from SharedPreferences as the primary source
       final prefs = await SharedPreferences.getInstance();
       final cachedUserId = prefs.getString('currentUserId');
-
-      print("DEBUG: cachedUserId from prefs = $cachedUserId");
-
       final user = await _authService.getCurrentUser();
-
-      print("DEBUG: getCurrentUser returned = $user");
 
       if (user != null) {
         final uid =
@@ -148,13 +311,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             user['id']?.toString() ??
             user['_id']?.toString() ??
             user['userId']?.toString() ??
-            cachedUserId; // fallback to cached
-
-        print("DEBUG: resolved uid = $uid");
+            cachedUserId;
 
         if (uid != null && uid.isNotEmpty) {
           _currentUserId = uid;
-
           nameController.text =
               user['Name']?.toString() ?? user['name']?.toString() ?? '';
           emailController.text =
@@ -175,44 +335,565 @@ class _ProfileScreenState extends State<ProfileScreen> {
             });
           }
         }
-      } else if (cachedUserId != null && cachedUserId.isNotEmpty) {
-        // API failed but we still have the ID cached — use it
-        print("DEBUG: user null but using cachedUserId = $cachedUserId");
-        setState(() => _currentUserId = cachedUserId);
-      } else {
-        print("DEBUG: No user found anywhere — not logged in?");
       }
+
+      // ── Step 13: load documents after user data ────────────────────────
+      await _loadDocuments();
     } catch (e) {
-      print("Error loading user/vehicle data: $e");
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error loading profile data')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AppColors.error,
+            content: Text(
+              'Error loading profile data',
+              style: GoogleFonts.jost(color: Colors.white),
+            ),
+          ),
+        );
       }
     } finally {
       setState(() => _isLoading = false);
     }
   }
 
-  void _showImagePickerOptions() {
-    showModalBottomSheet(
-      context: context,
-      builder: (BuildContext context) {
-        return SafeArea(
-          child: Wrap(
-            children: <Widget>[
-              ListTile(
-                leading: const Icon(Icons.photo_library),
-                title: const Text('Choose from Gallery'),
-                onTap: () {
-                  Navigator.pop(context);
-                  ();
+  // ── Step 13: load documents method ──────────────────────────────────────
+  Future<void> _loadDocuments() async {
+    if (_currentUserId == null) return;
+    final docs = await DocumentService.getDocuments(_currentUserId!);
+    await DocumentNotificationService.scheduleAll(docs);
+    if (mounted) setState(() => _documents = docs);
+  }
+
+  // ── Luxury text field ─────────────────────────────────────────────────────────
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required String hintText,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: TextFormField(
+        controller: controller,
+        keyboardType: keyboardType,
+        style: GoogleFonts.jost(color: AppColors.textPrimary, fontSize: 14),
+        decoration: InputDecoration(
+          labelText: label,
+          hintText: hintText,
+          labelStyle: GoogleFonts.jost(
+            color: AppColors.textSecondary,
+            fontSize: 13,
+          ),
+          floatingLabelStyle: GoogleFonts.jost(
+            color: AppColors.gold,
+            fontSize: 12,
+          ),
+          hintStyle: GoogleFonts.jost(color: AppColors.textMuted, fontSize: 14),
+          filled: true,
+          fillColor: AppColors.surfaceElevated,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.borderGold),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.borderGold),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.gold, width: 1.5),
+          ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.error),
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
+        ),
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return 'Please enter $label';
+          }
+          return null;
+        },
+      ),
+    );
+  }
+
+  // ── Luxury dropdown ───────────────────────────────────────────────────────
+  Widget _buildDarkDropdown({
+    required List<String> items,
+    required String? selectedValue,
+    required String hintText,
+    required String label,
+    required Function(String?) onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: DropdownButtonFormField<String>(
+        value: selectedValue,
+        style: GoogleFonts.jost(color: AppColors.textPrimary, fontSize: 14),
+        dropdownColor: AppColors.surfaceElevated,
+        icon: const Icon(
+          Icons.keyboard_arrow_down_rounded,
+          color: AppColors.gold,
+        ),
+        selectedItemBuilder:
+            (context) =>
+                items
+                    .map(
+                      (item) => Text(
+                        item,
+                        style: GoogleFonts.jost(
+                          color: AppColors.textPrimary,
+                          fontSize: 14,
+                        ),
+                      ),
+                    )
+                    .toList(),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: GoogleFonts.jost(
+            color: AppColors.textSecondary,
+            fontSize: 13,
+          ),
+          floatingLabelStyle: GoogleFonts.jost(
+            color: AppColors.gold,
+            fontSize: 12,
+          ),
+          filled: true,
+          fillColor: AppColors.surfaceElevated,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.borderGold),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.borderGold),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.gold, width: 1.5),
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
+        ),
+        hint: Text(
+          hintText,
+          style: GoogleFonts.jost(color: AppColors.textMuted, fontSize: 14),
+        ),
+        items:
+            items
+                .map(
+                  (item) => DropdownMenuItem(
+                    value: item,
+                    child: Text(
+                      item,
+                      style: GoogleFonts.jost(
+                        color: AppColors.textPrimary,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                )
+                .toList(),
+        onChanged: onChanged,
+      ),
+    );
+  }
+
+  // ── Vehicle panel (when setup is done) ───────────────────────────────────
+  Widget _buildVehiclePanel(String lang) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surfaceDark,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.borderGold),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.gold.withOpacity(0.06),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(
+          dividerColor: Colors.transparent,
+          expansionTileTheme: const ExpansionTileThemeData(
+            backgroundColor: AppColors.surfaceDark,
+            collapsedBackgroundColor: AppColors.surfaceDark,
+          ),
+        ),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          leading: VehicleImageHelper.buildFittedImage(
+            brand: selectedBrand,
+            model: selectedModel,
+            photoUrl: _vehiclePhotoUrl,
+            size: 50,
+          ),
+          title: Text(
+            '${selectedBrand ?? ''} ${selectedModel ?? ''}',
+            style: GoogleFonts.cormorantGaramond(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          subtitle: Text(
+            vehicleNumberController.text,
+            style: GoogleFonts.jost(
+              fontSize: 12,
+              color: AppColors.gold,
+              letterSpacing: 1,
+            ),
+          ),
+          iconColor: AppColors.gold,
+          collapsedIconColor: AppColors.textSecondary,
+          children: [
+            Container(height: 1, color: AppColors.borderGold),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── Existing vehicle info rows (unchanged) ──
+                  _infoRow('Vehicle Type', selectedType ?? '-'),
+                  const SizedBox(height: 8),
+                  _infoRow('Mileage', '${mileageController.text} km'),
+                  const SizedBox(height: 8),
+                  _infoRow('Year', yearController.text),
+
+                  // ── Existing edit button (unchanged) ──
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        setState(() => _isInitialSetup = true);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.gold,
+                        foregroundColor: AppColors.obsidian,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text(
+                        AppStrings.get('edit_vehicle', lang),
+                        style: GoogleFonts.jost(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Step 13: Document card widget ─────────────────────────────────────────
+  Widget _documentCard(VehicleDocument doc) {
+    Color statusColor;
+    String statusLabel;
+
+    if (doc.isExpired) {
+      statusColor = AppColors.error;
+      statusLabel = 'EXPIRED';
+    } else if (doc.isExpiringSoon) {
+      statusColor = Colors.orange;
+      statusLabel = 'Expires in ${doc.daysUntilExpiry}d';
+    } else {
+      statusColor = AppColors.gold;
+      statusLabel = 'Valid';
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.richBlack,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: statusColor.withOpacity(0.4)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            doc.type == 'license' ? Icons.badge : Icons.shield,
+            color: statusColor,
+            size: 28,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  doc.label,
+                  style: GoogleFonts.jost(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+                if (doc.documentNumber.isNotEmpty)
+                  Text(
+                    doc.documentNumber,
+                    style: GoogleFonts.jost(
+                      color: AppColors.textMuted,
+                      fontSize: 11,
+                    ),
+                  ),
+                if (doc.vehiclePlate.isNotEmpty)
+                  Text(
+                    doc.vehiclePlate,
+                    style: GoogleFonts.jost(
+                      color: AppColors.textMuted,
+                      fontSize: 11,
+                    ),
+                  ),
+                Text(
+                  'Expires: ${doc.formattedExpiry}',
+                  style: GoogleFonts.jost(
+                    color: statusColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  statusLabel,
+                  style: GoogleFonts.jost(
+                    color: statusColor,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(
+                  Icons.delete_outline,
+                  color: Colors.redAccent,
+                  size: 18,
+                ),
+                onPressed: () async {
+                  await DocumentService.deleteDocument(doc.id);
+                  _loadDocuments();
                 },
               ),
             ],
           ),
-        );
-      },
+        ],
+      ),
+    );
+  }
+
+  Widget _infoRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.jost(fontSize: 13, color: AppColors.textSecondary),
+        ),
+        Text(
+          value,
+          style: GoogleFonts.jost(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Setup form (unchanged) ────────────────────────────────────────────────
+  Widget _buildInitialSetupForm(String lang) {
+    return Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Vehicle image circle
+          Container(
+            width: 150,
+            height: 150,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.gold, width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.gold.withOpacity(0.1),
+                  blurRadius: 20,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child:
+                _vehiclePhotoUrl != null
+                    ? ClipOval(
+                      child: Image.network(
+                        _vehiclePhotoUrl!,
+                        fit: BoxFit.cover,
+                      ),
+                    )
+                    : Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        VehicleImageHelper.buildFittedImage(
+                          brand: selectedBrand,
+                          model: selectedModel,
+                          size: 150,
+                        ),
+                        Container(
+                          width: 150,
+                          height: 150,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.black.withOpacity(0.3),
+                          ),
+                          child: const Icon(
+                            Icons.add_photo_alternate,
+                            color: Colors.white,
+                            size: 30,
+                          ),
+                        ),
+                      ],
+                    ),
+          ),
+
+          const SizedBox(height: 20),
+
+          Text(
+            AppStrings.get('vehicle_information_setup', lang),
+            style: GoogleFonts.cormorantGaramond(
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+
+          goldDivider(),
+
+          _buildDarkDropdown(
+            items: vehicleModels.keys.toList(),
+            selectedValue: selectedBrand,
+            hintText: AppStrings.get('select_brand', lang),
+            label: 'Vehicle Brand',
+            onChanged: (value) {
+              setState(() {
+                selectedBrand = value;
+                selectedModel = null;
+              });
+            },
+          ),
+
+          _buildDarkDropdown(
+            items:
+                selectedBrand != null && vehicleModels[selectedBrand] != null
+                    ? vehicleModels[selectedBrand]!
+                    : [],
+            selectedValue: selectedModel,
+            hintText:
+                selectedBrand == null
+                    ? AppStrings.get('select_brand_first', lang)
+                    : AppStrings.get('select_model', lang),
+            label: 'Vehicle Model',
+            onChanged: (value) {
+              setState(() => selectedModel = value);
+            },
+          ),
+
+          _buildDarkDropdown(
+            items: vehicleTypes,
+            selectedValue: selectedType,
+            hintText: AppStrings.get('select_type', lang),
+            label: 'Vehicle Type',
+            onChanged: (value) {
+              setState(() => selectedType = value);
+            },
+          ),
+
+          _buildTextField(
+            controller: vehicleNumberController,
+            label: 'Vehicle Number',
+            hintText: 'Enter vehicle number',
+          ),
+
+          _buildTextField(
+            controller: mileageController,
+            label: 'Mileage (km)',
+            hintText: 'Enter mileage',
+            keyboardType: TextInputType.number,
+          ),
+
+          _buildTextField(
+            controller: yearController,
+            label: 'Manufacture Year',
+            hintText: 'Enter year',
+            keyboardType: TextInputType.number,
+          ),
+
+          const SizedBox(height: 8),
+
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.gold,
+                foregroundColor: AppColors.obsidian,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onPressed: _isLoading ? null : () => _saveProfile(),
+              child:
+                  _isLoading
+                      ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: AppColors.obsidian,
+                          strokeWidth: 2,
+                        ),
+                      )
+                      : Text(
+                        AppStrings.get('save_vehicle', lang),
+                        style: GoogleFonts.jost(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -222,12 +903,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
       valueListenable: localeNotifier,
       builder: (context, lang, _) {
         return Scaffold(
+          backgroundColor: AppColors.richBlack,
           appBar: AppBar(
             backgroundColor: AppColors.obsidian,
             elevation: 0,
+            iconTheme: const IconThemeData(color: AppColors.gold),
             leading: IconButton(
               icon: const Icon(Icons.home, color: AppColors.gold),
-              onPressed: () => _navigateToDashboard(context),
+              onPressed:
+                  () => Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => DashboardScreen()),
+                  ),
             ),
             actions: [
               IconButton(
@@ -248,208 +935,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
           body: Stack(
             children: [
               SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(20),
                 child:
                     _isInitialSetup
                         ? _buildInitialSetupForm(lang)
-                        : _buildVehiclePanel(lang),
+                        : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildVehiclePanel(lang),
+                            const SizedBox(height: 20),
+                            _buildDocumentsSection(),
+                          ],
+                        ),
               ),
               if (_isLoading)
                 Container(
                   color: Colors.black.withOpacity(0.5),
                   child: const Center(
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
+                    child: CircularProgressIndicator(color: AppColors.gold),
                   ),
                 ),
             ],
           ),
-          bottomNavigationBar: _buildBottomNavBar(),
+          bottomNavigationBar: AppBottomNav(currentIndex: 4),
         );
       },
     );
   }
 
-  Widget _buildVehiclePanel(String lang) {
-    return Column(
-      children: [
-        Card(
-          elevation: 2,
-          child: ExpansionTile(
-            leading: VehicleImageHelper.buildFittedImage(
-              brand: selectedBrand,
-              model: selectedModel,
-              photoUrl: _vehiclePhotoUrl,
-              size: 50,
-            ),
-            title: Text(
-              '${selectedBrand ?? ''} ${selectedModel ?? ''}',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            subtitle: Text(vehicleNumberController.text),
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildInfoRow('Vehicle Type', selectedType ?? ''),
-                    _buildInfoRow('Mileage', '${mileageController.text} km'),
-                    _buildInfoRow('Year', yearController.text),
-                    SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () {
-                        setState(() {
-                          _isInitialSetup = true;
-                        });
-                      },
-                      child: Text(AppStrings.get('edit_vehicle', lang)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.gold,
-                        foregroundColor: AppColors.obsidian,
-                        minimumSize: const Size(double.infinity, 40),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontWeight: FontWeight.w500,
-              color: AppColors.textSecondary,
-            ),
-          ),
-          Text(value, style: TextStyle(fontWeight: FontWeight.w600)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInitialSetupForm(String lang) {
-    return Form(
-      key: _formKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          GestureDetector(
-            onTap: _showImagePickerOptions,
-            child: Container(
-              width: 150,
-              height: 150,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColors.gold, width: 2),
-              ),
-              child:
-                  _vehiclePhotoUrl != null
-                      ? ClipOval(
-                        child: Image.network(
-                          _vehiclePhotoUrl!,
-                          fit: BoxFit.cover,
-                        ),
-                      )
-                      : Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          VehicleImageHelper.buildFittedImage(
-                            brand: selectedBrand,
-                            model: selectedModel,
-                            size: 150,
-                            backgroundColor: Colors.grey.shade100,
-                          ),
-                          Container(
-                            width: 150,
-                            height: 150,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.black.withOpacity(0.3),
-                            ),
-                            child: const Icon(
-                              Icons.add_photo_alternate,
-                              color: Colors.white,
-                              size: 30,
-                            ),
-                          ),
-                        ],
-                      ),
-            ),
-          ),
-          SizedBox(height: 10),
-          Text(
-            AppStrings.get('vehicle_information_setup', lang),
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          SizedBox(height: 20),
-          _buildBrandDropdown(lang),
-          _buildModelDropdown(lang),
-          _buildTypeDropdown(lang),
-          SizedBox(height: 20),
-          _buildTextField(
-            controller: vehicleNumberController,
-            label: "Vehicle Number",
-            hintText: "Enter vehicle number",
-          ),
-          _buildTextField(
-            controller: mileageController,
-            label: "Mileage (km)",
-            hintText: "Enter mileage",
-          ),
-          _buildTextField(
-            controller: yearController,
-            label: "Manufacture Year",
-            hintText: "Enter year",
-          ),
-          SizedBox(height: 20),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.gold,
-              foregroundColor: AppColors.obsidian,
-              minimumSize: const Size(double.infinity, 50),
-            ),
-            onPressed: _isLoading ? null : () => _saveProfile(),
-            child: Text(
-              AppStrings.get('save_vehicle', lang),
-              style: GoogleFonts.jost(
-                fontWeight: FontWeight.w700,
-                fontSize: 14,
-                letterSpacing: 1.5,
-                color: AppColors.obsidian,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBottomNavBar() {
-    return AppBottomNav(currentIndex: 4);
-  }
-
   Future<void> _saveProfile() async {
     if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
+      setState(() => _isLoading = true);
 
       try {
         if (_currentUserId == null || _currentUserId!.isEmpty) {
-          throw Exception("User not authenticated");
+          throw Exception('User not authenticated');
         }
 
         Map<String, dynamic> vehicleData = {
@@ -474,155 +994,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
           throw Exception('Failed to save vehicle data');
         }
 
-        _showPopupMessage(
-          context,
-          "Success",
-          "Vehicle information saved successfully!",
-        );
-
-        setState(() => _isInitialSetup = false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: AppColors.success,
+              content: Text(
+                'Vehicle information saved successfully!',
+                style: GoogleFonts.jost(color: Colors.white),
+              ),
+            ),
+          );
+          setState(() => _isInitialSetup = false);
+        }
       } catch (e) {
-        print("Error saving vehicle info: $e");
-        _showPopupMessage(
-          context,
-          "Error",
-          "Failed to save vehicle data: ${e.toString()}",
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: AppColors.error,
+              content: Text(
+                'Failed to save vehicle data: ${e.toString()}',
+                style: GoogleFonts.jost(color: Colors.white),
+              ),
+            ),
+          );
+        }
       } finally {
-        setState(() {
-          _isLoading = false;
-        });
+        if (mounted) setState(() => _isLoading = false);
       }
     }
-  }
-
-  void _showPopupMessage(BuildContext context, String title, String message) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(title),
-          content: Text(message),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text("OK"),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _navigateToDashboard(BuildContext context) {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => DashboardScreen()),
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required String hintText,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: TextFormField(
-        controller: controller,
-        decoration: InputDecoration(
-          labelText: label,
-          hintText: hintText,
-          border: OutlineInputBorder(),
-        ),
-        validator: (value) {
-          if (value == null || value.isEmpty) {
-            return 'Please enter $label';
-          }
-          return null;
-        },
-      ),
-    );
-  }
-
-  Widget _buildBrandDropdown(String lang) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: DropdownButtonFormField<String>(
-        decoration: InputDecoration(
-          labelText: "Vehicle Brand",
-          border: OutlineInputBorder(),
-        ),
-        value: selectedBrand,
-        items:
-            vehicleModels.keys
-                .map(
-                  (brand) => DropdownMenuItem(value: brand, child: Text(brand)),
-                )
-                .toList(),
-        onChanged: (value) {
-          setState(() {
-            selectedBrand = value;
-            selectedModel = null;
-          });
-        },
-        hint: Text(AppStrings.get('select_brand', lang)),
-      ),
-    );
-  }
-
-  Widget _buildModelDropdown(String lang) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: DropdownButtonFormField<String>(
-        decoration: InputDecoration(
-          labelText: "Vehicle Model",
-          border: OutlineInputBorder(),
-        ),
-        value: selectedModel,
-        items:
-            (selectedBrand != null && vehicleModels[selectedBrand] != null)
-                ? vehicleModels[selectedBrand]!
-                    .map(
-                      (model) =>
-                          DropdownMenuItem(value: model, child: Text(model)),
-                    )
-                    .toList()
-                : [],
-        onChanged: (value) {
-          setState(() {
-            selectedModel = value;
-          });
-        },
-        hint: Text(
-          selectedBrand == null
-              ? AppStrings.get('select_brand_first', lang)
-              : AppStrings.get('select_model', lang),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTypeDropdown(String lang) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: DropdownButtonFormField<String>(
-        decoration: InputDecoration(
-          labelText: "Vehicle Type",
-          border: OutlineInputBorder(),
-        ),
-        value: selectedType,
-        items:
-            vehicleTypes
-                .map((type) => DropdownMenuItem(value: type, child: Text(type)))
-                .toList(),
-        onChanged: (value) {
-          setState(() {
-            selectedType = value;
-          });
-        },
-        hint: Text(AppStrings.get('select_type', lang)),
-      ),
-    );
   }
 }

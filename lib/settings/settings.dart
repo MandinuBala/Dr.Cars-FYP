@@ -1,13 +1,10 @@
+// lib/settings/Settings.dart
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:dr_cars_fyp/auth/auth_service.dart';
 import 'package:dr_cars_fyp/main.dart';
 import 'package:dr_cars_fyp/user/main_dashboard.dart';
-import 'package:dr_cars_fyp/map/mapscreen.dart';
-import 'package:dr_cars_fyp/obd/OBD2.dart';
-import 'package:dr_cars_fyp/service/service_history.dart';
-import 'package:dr_cars_fyp/user/user_profile.dart';
 import 'package:dr_cars_fyp/auth/signin.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:dr_cars_fyp/l10n/app_strings.dart';
@@ -18,6 +15,7 @@ import 'package:dr_cars_fyp/widgets/app_bottom_nav.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
+
   @override
   _SettingsScreenState createState() => _SettingsScreenState();
 }
@@ -40,6 +38,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.initState();
     _loadPreferences();
     _loadUserData();
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadPreferences() async {
@@ -89,9 +95,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
       });
     }
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(t('save'))));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: AppColors.success,
+          content: Text(
+            t('save'),
+            style: GoogleFonts.jost(color: Colors.white),
+          ),
+        ),
+      );
+    }
     setState(() => _isLoading = false);
   }
 
@@ -102,45 +116,103 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  void _showPersonalInfoDialog() {
-    showDialog(
-      context: context,
-      builder:
-          (_) => AlertDialog(
-            title: Text(t('personal_information')),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: _nameController,
-                  decoration: InputDecoration(
-                    labelText: t('personal_information'),
-                  ),
-                ),
-                TextField(
-                  controller: _emailController,
-                  decoration: InputDecoration(labelText: 'Email'),
-                ),
-                TextField(
-                  controller: _phoneController,
-                  decoration: InputDecoration(labelText: 'Phone'),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(t('cancel')),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _saveSettings();
-                },
-                child: Text(t('save')),
-              ),
-            ],
+  // ── Themed text field for dialogs ─────────────────────────────────────────
+  Widget _dialogTextField(TextEditingController controller, String label) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: TextField(
+        controller: controller,
+        style: GoogleFonts.jost(color: AppColors.textPrimary, fontSize: 14),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: GoogleFonts.jost(
+            color: AppColors.textSecondary,
+            fontSize: 13,
           ),
+          floatingLabelStyle: GoogleFonts.jost(
+            color: AppColors.gold,
+            fontSize: 12,
+          ),
+          filled: true,
+          fillColor: AppColors.surfaceElevated,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: AppColors.borderGold),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: AppColors.borderGold),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: AppColors.gold, width: 1.5),
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: 12,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Themed alert dialog ───────────────────────────────────────────────────
+  Future<T?> _showThemedDialog<T>(Widget dialog) {
+    return showDialog<T>(context: context, builder: (_) => dialog);
+  }
+
+  void _showPersonalInfoDialog() {
+    _showThemedDialog(
+      AlertDialog(
+        backgroundColor: AppColors.surfaceDark,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: AppColors.borderGold),
+        ),
+        title: Text(
+          t('personal_information'),
+          style: GoogleFonts.cormorantGaramond(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _dialogTextField(_nameController, 'Name'),
+            _dialogTextField(_emailController, 'Email'),
+            _dialogTextField(_phoneController, 'Phone'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              t('cancel'),
+              style: GoogleFonts.jost(color: AppColors.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _saveSettings();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.gold,
+              foregroundColor: AppColors.obsidian,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              t('save'),
+              style: GoogleFonts.jost(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -148,331 +220,548 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final cur = TextEditingController();
     final neu = TextEditingController();
     final conf = TextEditingController();
-    showDialog(
-      context: context,
-      builder:
-          (_) => AlertDialog(
-            title: Text(t('change_password')),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: cur,
-                  decoration: InputDecoration(labelText: t('current_password')),
-                  obscureText: true,
-                ),
-                TextField(
-                  controller: neu,
-                  decoration: InputDecoration(labelText: t('new_password')),
-                  obscureText: true,
-                ),
-                TextField(
-                  controller: conf,
-                  decoration: InputDecoration(labelText: t('confirm_password')),
-                  obscureText: true,
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(t('cancel')),
-              ),
-              TextButton(
-                onPressed: () async {
-                  if (neu.text != conf.text) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Passwords do not match')),
-                    );
-                    return;
-                  }
-                  Navigator.pop(context);
-                  try {
-                    final userId = await _authService.getCurrentUserId();
-                    if (userId == null || userId.isEmpty) {
-                      throw Exception('User not found');
-                    }
 
-                    await _authService.changePassword(
-                      userId: userId,
-                      currentPassword: cur.text,
-                      newPassword: neu.text,
-                    );
-
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(SnackBar(content: Text('Password changed')));
-                  } catch (e) {
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(SnackBar(content: Text('Error: $e')));
-                  }
-                },
-                child: Text(t('change')),
-              ),
-            ],
+    _showThemedDialog(
+      AlertDialog(
+        backgroundColor: AppColors.surfaceDark,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: AppColors.borderGold),
+        ),
+        title: Text(
+          t('change_password'),
+          style: GoogleFonts.cormorantGaramond(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
           ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _dialogTextField(cur, t('current_password')),
+            _dialogTextField(neu, t('new_password')),
+            _dialogTextField(conf, t('confirm_password')),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              t('cancel'),
+              style: GoogleFonts.jost(color: AppColors.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (neu.text != conf.text) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    backgroundColor: AppColors.error,
+                    content: Text(
+                      'Passwords do not match',
+                      style: GoogleFonts.jost(color: Colors.white),
+                    ),
+                  ),
+                );
+                return;
+              }
+              Navigator.pop(context);
+              try {
+                final userId = await _authService.getCurrentUserId();
+                if (userId == null || userId.isEmpty) {
+                  throw Exception('User not found');
+                }
+                await _authService.changePassword(
+                  userId: userId,
+                  currentPassword: cur.text,
+                  newPassword: neu.text,
+                );
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      backgroundColor: AppColors.success,
+                      content: Text(
+                        'Password changed successfully.',
+                        style: GoogleFonts.jost(color: Colors.white),
+                      ),
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      backgroundColor: AppColors.error,
+                      content: Text(
+                        'Error: $e',
+                        style: GoogleFonts.jost(color: Colors.white),
+                      ),
+                    ),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.gold,
+              foregroundColor: AppColors.obsidian,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              t('change'),
+              style: GoogleFonts.jost(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   void _showHelpSupportDialog() {
-    showDialog(
-      context: context,
-      builder:
-          (_) => AlertDialog(
-            title: Text(t('help_support')),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
+    _showThemedDialog(
+      AlertDialog(
+        backgroundColor: AppColors.surfaceDark,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: AppColors.borderGold),
+        ),
+        title: Text(
+          t('help_support'),
+          style: GoogleFonts.cormorantGaramond(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _contactTile(
+              Icons.email_outlined,
+              t('contact_email'),
+              'support@drcars.com',
+              () => _launchUrl('mailto:support@drcars.com'),
+            ),
+            _contactTile(
+              Icons.phone_outlined,
+              t('contact_call'),
+              '+94 77 211 1426',
+              () => _launchUrl('tel:+94772111426'),
+            ),
+            _contactTile(
+              Icons.chat_outlined,
+              t('contact_chat'),
+              'WhatsApp',
+              () => _launchUrl('https://wa.me/+94772111426'),
+            ),
+          ],
+        ),
+        actions: [
+          SizedBox(
+            width: double.infinity,
+            child: TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                t('close'),
+                style: GoogleFonts.jost(color: AppColors.textSecondary),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _contactTile(
+    IconData icon,
+    String title,
+    String subtitle,
+    VoidCallback onTap,
+  ) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceElevated,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppColors.borderGold),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: AppColors.gold, size: 20),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ListTile(
-                  leading: const Icon(Icons.email),
-                  title: Text(t('contact_email')),
-                  subtitle: const Text('support@drcars.com'),
-                  onTap: () => _launchUrl('mailto:support@drcars.com'),
+                Text(
+                  title,
+                  style: GoogleFonts.jost(
+                    color: AppColors.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-                ListTile(
-                  leading: const Icon(Icons.phone),
-                  title: Text(t('contact_call')),
-                  subtitle: const Text('+94 77 211 1426'),
-                  onTap: () => _launchUrl('tel:+94772111426'),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.chat),
-                  title: Text(t('contact_chat')),
-                  subtitle: const Text('WhatsApp'),
-                  onTap: () => _launchUrl('https://wa.me/+94772111426'),
+                Text(
+                  subtitle,
+                  style: GoogleFonts.jost(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
                 ),
               ],
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(t('close')),
-              ),
-            ],
-          ),
+          ],
+        ),
+      ),
     );
   }
 
   void _showAboutDialog() {
-    showDialog(
-      context: context,
-      builder:
-          (_) => AlertDialog(
-            title: Text(t('about')),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Image.asset('images/logo.png', height: 80),
-                const SizedBox(height: 12),
-                const Text('Dr. Cars v1.0.0'),
-                const Text('© 2025 Dr. Cars. All rights reserved.'),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(t('close')),
-              ),
-            ],
+    _showThemedDialog(
+      AlertDialog(
+        backgroundColor: AppColors.surfaceDark,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: AppColors.borderGold),
+        ),
+        title: Text(
+          t('about'),
+          style: GoogleFonts.cormorantGaramond(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
           ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceElevated,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.gold.withOpacity(0.3)),
+              ),
+              child: Image.asset('images/logo.png', height: 60),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Dr. Cars v1.0.0',
+              style: GoogleFonts.cormorantGaramond(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '© 2025 Dr. Cars. All rights reserved.',
+              style: GoogleFonts.jost(
+                color: AppColors.textSecondary,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.gold,
+                foregroundColor: AppColors.obsidian,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text(
+                t('close'),
+                style: GoogleFonts.jost(fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   void _showLogoutConfirm() {
-    showDialog(
-      context: context,
-      builder:
-          (_) => AlertDialog(
-            title: Text(t('logout_confirm_title')),
-            content: Text(t('logout_confirm')),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(t('no')),
-              ),
-              TextButton(
-                onPressed: () async {
-                  Navigator.pop(context);
-                  await _authService.logout();
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (_) => SignInScreen()),
-                    (_) => false,
-                  );
-                },
-                child: Text(t('yes')),
-              ),
-            ],
+    _showThemedDialog(
+      AlertDialog(
+        backgroundColor: AppColors.surfaceDark,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: AppColors.borderGold),
+        ),
+        title: Text(
+          t('logout_confirm_title'),
+          style: GoogleFonts.cormorantGaramond(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
           ),
+        ),
+        content: Text(
+          t('logout_confirm'),
+          style: GoogleFonts.jost(color: AppColors.textSecondary, fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              t('no'),
+              style: GoogleFonts.jost(color: AppColors.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _authService.logout();
+              if (mounted) {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (_) => SignInScreen()),
+                  (_) => false,
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              t('yes'),
+              style: GoogleFonts.jost(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   void _showDeleteConfirm() {
-    showDialog(
-      context: context,
-      builder:
-          (_) => AlertDialog(
-            title: Text(t('delete_confirm_title')),
-            content: Text(t('delete_confirm')),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(t('no')),
-              ),
-              TextButton(
-                onPressed: () async {
-                  Navigator.pop(context);
-                  final userId = await _authService.getCurrentUserId();
-                  if (userId != null && userId.isNotEmpty) {
-                    await _authService.deleteUserById(userId);
-                  }
-                  await _authService.logout();
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (_) => SignInScreen()),
-                    (_) => false,
-                  );
-                },
-                child: Text(
-                  t('yes'),
-                  style: const TextStyle(color: Colors.red),
-                ),
-              ),
-            ],
+    _showThemedDialog(
+      AlertDialog(
+        backgroundColor: AppColors.surfaceDark,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: AppColors.borderGold),
+        ),
+        title: Text(
+          t('delete_confirm_title'),
+          style: GoogleFonts.cormorantGaramond(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
           ),
+        ),
+        content: Text(
+          t('delete_confirm'),
+          style: GoogleFonts.jost(color: AppColors.textSecondary, fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              t('no'),
+              style: GoogleFonts.jost(color: AppColors.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              final userId = await _authService.getCurrentUserId();
+              if (userId != null && userId.isNotEmpty) {
+                await _authService.deleteUserById(userId);
+              }
+              await _authService.logout();
+              if (mounted) {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (_) => SignInScreen()),
+                  (_) => false,
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              t('yes'),
+              style: GoogleFonts.jost(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   void _showPrivacyPolicy() {
-    showDialog(
-      context: context,
-      builder:
-          (_) => AlertDialog(
-            title: const Text('Privacy Policy'),
-            content: SingleChildScrollView(
-              child: Text('''Privacy Policy for Dr Cars
+    _showThemedDialog(
+      AlertDialog(
+        backgroundColor: AppColors.surfaceDark,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: AppColors.borderGold),
+        ),
+        title: Text(
+          'Privacy Policy',
+          style: GoogleFonts.cormorantGaramond(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        content: SingleChildScrollView(
+          child: Text(
+            '''Privacy Policy for Dr Cars
 
 Effective Date: April 23, 2025
 
-At Dr Cars, we are committed to protecting your privacy. This Privacy Policy explains how we collect, use, and protect your information when you use our car service booking app.
+At Dr Cars, we are committed to protecting your privacy...
 
 1. Information We Collect
-
-When you use Dr Cars, we may collect the following personal information:
-- Full Name
-- Address
-- Phone Number
-- Email Address
-- Username
-
-This information is collected to provide you with a smooth and personalized experience when booking car services.
+When you use Dr Cars, we may collect: Full Name, Address, Phone Number, Email Address, Username.
 
 2. How We Use Your Information
-
-We use your information to:
-- Register and manage your account
-- Process and confirm your service bookings
-- Communicate with you regarding your bookings and support inquiries
-- Improve our services and user experience
-- Ensure security and prevent unauthorized access
+We use your information to register and manage your account, process bookings, communicate with you, improve our services, and ensure security.
 
 3. Data Sharing
-
-We do not sell, trade, or rent your personal information to third parties. We may share your information only:
-- With service professionals (e.g., mechanics or garages) to fulfill your booking
-- When required by law or legal process
-- To protect the rights, property, or safety of Dr Cars and its users
+We do not sell, trade, or rent your personal information to third parties.
 
 4. Data Security
+We implement reasonable safeguards to protect your personal information.
 
-We implement reasonable safeguards to protect your personal information from unauthorized access, use, or disclosure.
-
-5. Your Choices
-
-You can review, update, or delete your personal information by contacting us or through your account settings in the app.
-
-6. Changes to This Policy
-
-We may update this Privacy Policy from time to time. If we make any significant changes, we will notify you through the app or by email.
-
-7. Contact Us
-
-If you have any questions or concerns about this Privacy Policy, please contact us at:
-- Email: support@drcars.com
-- Phone: +94 77 211 1426
-- Chat: https://wa.me/+94772111426
-'''),
+5. Contact Us
+Email: support@drcars.com
+Phone: +94 77 211 1426''',
+            style: GoogleFonts.jost(
+              color: AppColors.textSecondary,
+              fontSize: 13,
+              height: 1.6,
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(t('close')),
-              ),
-            ],
           ),
+        ),
+        actions: [
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.gold,
+                foregroundColor: AppColors.obsidian,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text(
+                t('close'),
+                style: GoogleFonts.jost(fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   void _showTerms() {
-    showDialog(
-      context: context,
-      builder:
-          (_) => AlertDialog(
-            title: const Text('Terms and Conditions'),
-            content: SingleChildScrollView(
-              child: Text('''Terms and Conditions for Dr Cars
+    _showThemedDialog(
+      AlertDialog(
+        backgroundColor: AppColors.surfaceDark,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: AppColors.borderGold),
+        ),
+        title: Text(
+          'Terms and Conditions',
+          style: GoogleFonts.cormorantGaramond(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        content: SingleChildScrollView(
+          child: Text(
+            '''Terms and Conditions for Dr Cars
 
 Effective Date: April 23, 2025
 
-Please read these Terms and Conditions ("Terms") carefully before using the Dr Cars app. By accessing or using the app, you agree to be bound by these Terms.
-
 1. Use of the App
-You agree to use the Dr Cars app only for lawful purposes and in accordance with these Terms. You may not misuse the app or interfere with its normal operation.
+You agree to use the Dr Cars app only for lawful purposes.
 
 2. Service Bookings
-All service bookings made through the app are subject to availability and confirmation. We reserve the right to cancel or refuse any booking at our discretion.
+All bookings are subject to availability and confirmation.
 
 3. User Information
-You are responsible for providing accurate and up-to-date information during registration and booking. Any false or misleading information may result in suspension of your account.
+You are responsible for providing accurate information.
 
 4. Payments
-Prices and fees for services are displayed in the app and may vary based on location and service provider. All payments must be completed as per the method specified during booking.
+Prices and fees are displayed in the app.
 
 5. Cancellations and Refunds
-You may cancel a service within the allowed cancellation window specified during booking. Refunds (if applicable) are processed based on the service provider’s policy.
+You may cancel within the allowed cancellation window.
 
 6. Intellectual Property
-All content, branding, and features of the Dr Cars app are the property of Dr Cars or its licensors. You may not copy, modify, or distribute any part of the app without permission.
+All content and features are the property of Dr Cars.
 
 7. Limitation of Liability
-Dr Cars is not responsible for any direct or indirect damages resulting from use of the app or services booked through it. We act solely as a platform connecting users and service providers.
+Dr Cars is not responsible for any indirect damages.
 
-8. Changes to Terms
-We may update these Terms from time to time. Continued use of the app after changes means you accept the new Terms.
-
-9. Governing Law
-These Terms are governed by and interpreted in accordance with the laws of [Your Country/Region].
-
-10. Contact Us
-If you have any questions about these Terms, please contact us at:
+8. Contact Us
 Email: support@drcars.com
-Phone: +94 77 211 1426
-Chat: https://wa.me/+94772111426
-'''),
+Phone: +94 77 211 1426''',
+            style: GoogleFonts.jost(
+              color: AppColors.textSecondary,
+              fontSize: 13,
+              height: 1.6,
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(t('close')),
-              ),
-            ],
           ),
+        ),
+        actions: [
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.gold,
+                foregroundColor: AppColors.obsidian,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text(
+                t('close'),
+                style: GoogleFonts.jost(fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
+  // ── Section header ────────────────────────────────────────────────────────
   Widget _sectionHeader(String title) => Padding(
-    padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+    padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
     child: Text(
       title.toUpperCase(),
       style: GoogleFonts.jost(
@@ -484,49 +773,94 @@ Chat: https://wa.me/+94772111426
     ),
   );
 
+  // ── Settings tile ─────────────────────────────────────────────────────────
+  Widget _settingsTile({
+    required IconData icon,
+    required String title,
+    Widget? trailing,
+    VoidCallback? onTap,
+    Color? titleColor,
+    Color? iconColor,
+  }) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceDark,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.borderGold),
+      ),
+      child: ListTile(
+        leading: Icon(icon, color: iconColor ?? AppColors.gold, size: 20),
+        title: Text(
+          title,
+          style: GoogleFonts.jost(
+            color: titleColor ?? AppColors.textPrimary,
+            fontSize: 14,
+          ),
+        ),
+        trailing:
+            trailing ??
+            const Icon(
+              Icons.arrow_forward_ios,
+              size: 14,
+              color: AppColors.textMuted,
+            ),
+        onTap: onTap,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<String>(
       valueListenable: localeNotifier,
       builder: (context, lang, _) {
-        final theme = Theme.of(context);
         return Scaffold(
+          backgroundColor: AppColors.richBlack,
           appBar: AppBar(
+            backgroundColor: AppColors.obsidian,
+            foregroundColor: AppColors.textPrimary,
+            iconTheme: const IconThemeData(color: AppColors.gold),
             title: Text(
               AppStrings.get('settings', lang),
-              style: const TextStyle(
-                fontSize: 25,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+              style: GoogleFonts.cormorantGaramond(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+                letterSpacing: 0.5,
               ),
             ),
-            backgroundColor: AppColors.obsidian,
-            elevation: 0,
-            leading: const BackButton(),
             actions: [
               IconButton(
-                icon: const Icon(Icons.save),
+                icon: const Icon(Icons.save, color: AppColors.gold),
                 onPressed: _isLoading ? null : _saveSettings,
               ),
             ],
           ),
           body:
               _isLoading
-                  ? const Center(child: CircularProgressIndicator())
+                  ? const Center(
+                    child: CircularProgressIndicator(color: AppColors.gold),
+                  )
                   : ListView(
-                    padding: EdgeInsets.zero,
+                    padding: const EdgeInsets.only(bottom: 32),
                     children: [
+                      // ── Account Settings ──────────────────────────
                       _sectionHeader(t('account_settings')),
-                      ListTile(
-                        leading: const Icon(Icons.person_outline),
-                        title: Text(t('personal_information')),
+
+                      _settingsTile(
+                        icon: Icons.person_outline,
+                        title: t('personal_information'),
                         onTap: _showPersonalInfoDialog,
                       ),
-                      ListTile(
-                        leading: const Icon(Icons.notifications_outlined),
-                        title: Text(t('notifications')),
+
+                      _settingsTile(
+                        icon: Icons.notifications_outlined,
+                        title: t('notifications'),
                         trailing: Switch(
                           value: _notificationsEnabled,
+                          activeColor: AppColors.gold,
                           onChanged: (v) async {
                             if (v) {
                               await OneSignal.User.pushSubscription.optIn();
@@ -539,50 +873,64 @@ Chat: https://wa.me/+94772111426
                           },
                         ),
                       ),
-                      ListTile(
-                        leading: const Icon(Icons.language),
-                        title: Text(
-                          t('language'),
-                          style: const TextStyle(fontSize: 16),
-                        ),
-                        trailing: DropdownButton<String>(
-                          value: _selectedLanguage,
-                          items: const [
-                            DropdownMenuItem(
-                              value: 'en',
-                              child: Text(
-                                'English',
-                                style: TextStyle(fontSize: 16),
+
+                      _settingsTile(
+                        icon: Icons.language,
+                        title: t('language'),
+                        trailing: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceElevated,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppColors.borderGold),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: _selectedLanguage,
+                              dropdownColor: AppColors.surfaceElevated,
+                              style: GoogleFonts.jost(
+                                color: AppColors.textPrimary,
+                                fontSize: 13,
                               ),
-                            ),
-                            DropdownMenuItem(
-                              value: 'si',
-                              child: Text(
-                                'සිංහල',
-                                style: TextStyle(fontSize: 16),
+                              icon: const Icon(
+                                Icons.keyboard_arrow_down_rounded,
+                                color: AppColors.gold,
+                                size: 18,
                               ),
+                              items: const [
+                                DropdownMenuItem(
+                                  value: 'en',
+                                  child: Text('English'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'si',
+                                  child: Text('සිංහල'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'ta',
+                                  child: Text('தமிழ்'),
+                                ),
+                              ],
+                              onChanged: (v) {
+                                if (v != null) {
+                                  setState(() => _selectedLanguage = v);
+                                  saveLocale(v);
+                                }
+                              },
                             ),
-                            DropdownMenuItem(
-                              value: 'ta',
-                              child: Text(
-                                'தமிழ்',
-                                style: TextStyle(fontSize: 16),
-                              ),
-                            ),
-                          ],
-                          onChanged: (v) {
-                            if (v != null) {
-                              setState(() => _selectedLanguage = v);
-                              saveLocale(v);
-                            }
-                          },
+                          ),
                         ),
                       ),
-                      ListTile(
-                        leading: const Icon(Icons.dark_mode),
-                        title: Text(t('dark_mode')),
+
+                      _settingsTile(
+                        icon: Icons.dark_mode_outlined,
+                        title: t('dark_mode'),
                         trailing: Switch(
                           value: _darkMode,
+                          activeColor: AppColors.gold,
                           onChanged:
                               (v) => setState(() {
                                 _darkMode = v;
@@ -591,49 +939,59 @@ Chat: https://wa.me/+94772111426
                               }),
                         ),
                       ),
+
+                      // ── Privacy & Security ────────────────────────
                       _sectionHeader(t('privacy_security')),
-                      ListTile(
-                        leading: const Icon(Icons.lock_outline),
-                        title: Text(t('privacy_policy')),
+
+                      _settingsTile(
+                        icon: Icons.shield_outlined,
+                        title: t('privacy_policy'),
                         onTap: _showPrivacyPolicy,
                       ),
-                      ListTile(
-                        leading: const Icon(Icons.password),
-                        title: Text(t('change_password')),
+                      _settingsTile(
+                        icon: Icons.lock_outline,
+                        title: t('change_password'),
                         onTap: _showChangePasswordDialog,
                       ),
+
+                      // ── Support ───────────────────────────────────
                       _sectionHeader(t('support')),
-                      ListTile(
-                        leading: const Icon(Icons.help_outline),
-                        title: Text(t('help_support')),
+
+                      _settingsTile(
+                        icon: Icons.help_outline,
+                        title: t('help_support'),
                         onTap: _showHelpSupportDialog,
                       ),
-                      ListTile(
-                        leading: const Icon(Icons.description_outlined),
-                        title: Text(t('terms')),
+                      _settingsTile(
+                        icon: Icons.description_outlined,
+                        title: t('terms'),
                         onTap: _showTerms,
                       ),
-                      ListTile(
-                        leading: const Icon(Icons.info_outline),
-                        title: Text(t('about')),
+                      _settingsTile(
+                        icon: Icons.info_outline,
+                        title: t('about'),
                         onTap: _showAboutDialog,
                       ),
+
+                      // ── Account Actions ───────────────────────────
                       _sectionHeader(t('account_actions')),
-                      ListTile(
-                        leading: const Icon(
-                          Icons.delete_outline,
-                          color: Colors.red,
-                        ),
-                        title: Text(
-                          t('delete_account'),
-                          style: const TextStyle(color: Colors.red),
+
+                      _settingsTile(
+                        icon: Icons.logout,
+                        title: t('logout'),
+                        onTap: _showLogoutConfirm,
+                      ),
+                      _settingsTile(
+                        icon: Icons.delete_outline,
+                        title: t('delete_account'),
+                        titleColor: AppColors.error,
+                        iconColor: AppColors.error,
+                        trailing: const Icon(
+                          Icons.arrow_forward_ios,
+                          size: 14,
+                          color: AppColors.error,
                         ),
                         onTap: _showDeleteConfirm,
-                      ),
-                      ListTile(
-                        leading: const Icon(Icons.logout),
-                        title: Text(t('logout')),
-                        onTap: _showLogoutConfirm,
                       ),
                     ],
                   ),

@@ -7,6 +7,9 @@ const ServiceReceipt = require("./models/ServiceReceipt");
 const ServiceRecord = require("./models/ServiceRecord");
 const ServiceCenterRequest = require("./models/ServiceCenterRequest");
 const Feedback = require("./models/Feedback");
+const VehicleDocument = require('./models/VehicleDocument');// insuerance and license documents
+const multer = require('multer');
+const path = require('path');
 
 const express = require("express");
 const mongoose = require("mongoose");
@@ -20,6 +23,19 @@ app.use('/models', (req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   next();
 }, express.static('public/models')); // 3d model static files
+
+// Serve document photos statically
+app.use('/documents', (req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  next();
+}, express.static('public/documents'));
+
+// Multer config for document photo uploads
+const documentStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, 'public/documents/'),
+  filename: (req, file, cb) => cb(null, `${Date.now()}_${file.originalname}`),
+});
+const documentUpload = multer({ storage: documentStorage });
 
 // CONNECT TO MONGODBser
 mongoose.connect(process.env.MONGO_URI)
@@ -592,11 +608,78 @@ app.patch("/service-receipts/:id/status", async (req, res) => {
       return res.status(404).json({ message: "Receipt not found" });
     }
 
+    if (status === "finished") {
+      const vehicle = await Vehicle.findOne({
+        vehicleNumber: updated.vehicleNumber,
+      });
+
+      console.log("Vehicle found:", vehicle);
+      console.log("Vehicle userId:", vehicle?.userId);
+      console.log("Vehicle uid:", vehicle?.uid);
+
+      const userId = vehicle?.userId?.toString() || vehicle?.uid?.toString();
+      console.log("userId being saved to ServiceRecord:", userId);
+
+      if (userId) {
+        const serviceCenterName =
+          updated["Service Center Name"] || "Unknown Service Center";
+
+        const services = updated.services
+          ? Object.fromEntries(updated.services)
+          : {};
+
+        console.log("Services to create records for:", services);
+
+        for (const [serviceName, price] of Object.entries(services)) {
+          const record = await ServiceRecord.create({
+            userId,
+            currentMileage: updated.currentMileage,
+            serviceMileage: updated.currentMileage,
+            serviceProvider: serviceCenterName,
+            serviceCost: price?.toString() || "0",
+            serviceType: serviceName,
+            date: updated.createdAt || new Date(),
+          });
+          console.log("Created ServiceRecord:", record);
+        }
+      } else {
+        console.log("No userId found — vehicle may not be linked to a user");
+      }
+    }
+
     res.json(updated);
+  } catch (error) {
+    console.error("Error in PATCH /service-receipts/:id/status:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/service-records/user/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Build all possible userId formats to match against
+    const filters = [{ userId }];
+
+    // Look up the user to get all their ID variants
+    const userFilters = [{ uid: userId }];
+    if (mongoose.Types.ObjectId.isValid(userId)) {
+      userFilters.push({ _id: userId });
+    }
+    const user = await User.findOne({ $or: userFilters });
+    if (user) {
+      filters.push({ userId: user._id.toString() });
+      if (user.uid) filters.push({ userId: user.uid.toString() });
+    }
+
+    const records = await ServiceRecord.find({ $or: filters }).sort({ createdAt: -1 });
+    console.log(`Records found for ${userId}:`, records.length);
+    res.json(records);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
+
 
 // DELETE SERVICE RECEIPT
 app.delete("/service-receipts/:id", async (req, res) => {
@@ -626,12 +709,29 @@ app.post("/service-records", async (req, res) => {
 app.get("/service-records/user/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
-    const records = await ServiceRecord.find({ userId }).sort({ createdAt: -1 });
+
+    // Build all possible userId formats to match against
+    const filters = [{ userId }];
+
+    // Look up the user to get all their ID variants
+    const userFilters = [{ uid: userId }];
+    if (mongoose.Types.ObjectId.isValid(userId)) {
+      userFilters.push({ _id: userId });
+    }
+    const user = await User.findOne({ $or: userFilters });
+    if (user) {
+      filters.push({ userId: user._id.toString() });
+      if (user.uid) filters.push({ userId: user.uid.toString() });
+    }
+
+    const records = await ServiceRecord.find({ $or: filters }).sort({ createdAt: -1 });
+    console.log(`Records found for ${userId}:`, records.length);
     res.json(records);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
+
 
 // FEEDBACK LISTING
 app.get("/feedbacks", async (req, res) => {
@@ -1029,6 +1129,55 @@ app.patch("/users/:id/password", async (req, res) => {
     await user.save();
 
     res.json({ message: "Password changed" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+// ---------------------- VEHICLE DOCUMENTS ----------------------
+
+// Upload document photo
+app.post('/documents/upload', documentUpload.single('photo'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+  const url = `http://192.168.1.21:5000/documents/${req.file.filename}`;
+  res.json({ url });
+});
+
+// Add new document record
+app.post('/vehicle-documents', async (req, res) => {
+  try {
+    const doc = await VehicleDocument.create({
+      userId:         req.body.userId,
+      type:           req.body.type,
+      label:          req.body.label,
+      documentNumber: req.body.documentNumber,
+      vehiclePlate:   req.body.vehiclePlate,
+      issueDate:      req.body.issueDate ? new Date(req.body.issueDate) : null,
+      expiryDate:     new Date(req.body.expiryDate),
+      photoUrl:       req.body.photoUrl || '',
+    });
+    res.status(201).json(doc);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get all documents for a user
+app.get('/vehicle-documents/:userId', async (req, res) => {
+  try {
+    const docs = await VehicleDocument.find({ userId: req.params.userId })
+      .sort({ expiryDate: 1 });
+    res.json(docs);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Delete a document
+app.delete('/vehicle-documents/:id', async (req, res) => {
+  try {
+    const { ObjectId } = require('mongoose').Types;
+    await VehicleDocument.findByIdAndDelete(req.params.id);
+    res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

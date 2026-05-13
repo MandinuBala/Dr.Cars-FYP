@@ -1,8 +1,11 @@
+// lib/service/service_info_screen.dart
 import 'dart:convert';
 
 import 'package:dr_cars_fyp/auth/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:dr_cars_fyp/theme/app_theme.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class ServiceInfoScreen extends StatefulWidget {
   final String vehicleNumber;
@@ -15,7 +18,6 @@ class ServiceInfoScreen extends StatefulWidget {
 
 class _ServiceInfoScreenState extends State<ServiceInfoScreen> {
   final AuthService _authService = AuthService();
-
   List<Map<String, dynamic>> _records = [];
   bool _isLoading = true;
 
@@ -43,7 +45,6 @@ class _ServiceInfoScreenState extends State<ServiceInfoScreen> {
         return;
       }
 
-      // FIX: was "done" — correct status is "finished"
       final response = await http.get(
         Uri.parse(
           '${_authService.baseUrl}/service-receipts/service-center/${Uri.encodeComponent(serviceCenterUid)}'
@@ -70,9 +71,15 @@ class _ServiceInfoScreenState extends State<ServiceInfoScreen> {
         _isLoading = false;
       });
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error loading records: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AppColors.error,
+            content: Text(
+              'Error loading records: $e',
+              style: GoogleFonts.jost(color: Colors.white),
+            ),
+          ),
+        );
       }
     }
   }
@@ -80,38 +87,65 @@ class _ServiceInfoScreenState extends State<ServiceInfoScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.richBlack,
       appBar: AppBar(
-        title: Text("History: ${widget.vehicleNumber}"),
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.obsidian,
+        foregroundColor: AppColors.textPrimary,
         centerTitle: true,
+        iconTheme: const IconThemeData(color: AppColors.gold),
+        title: Text(
+          'History: ${widget.vehicleNumber}',
+          style: GoogleFonts.cormorantGaramond(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+            letterSpacing: 0.5,
+          ),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh, color: AppColors.gold),
             onPressed: _loadRecords,
-            tooltip: "Refresh",
+            tooltip: 'Refresh',
           ),
         ],
       ),
       body:
           _isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? const Center(
+                child: CircularProgressIndicator(color: AppColors.gold),
+              )
               : _records.isEmpty
               ? Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.history, size: 60, color: Colors.grey),
-                    const SizedBox(height: 12),
+                    const Icon(
+                      Icons.history,
+                      size: 56,
+                      color: AppColors.textMuted,
+                    ),
+                    const SizedBox(height: 16),
                     Text(
-                      "No finished service records found\nfor ${widget.vehicleNumber}.",
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.grey),
+                      'No finished service records found',
+                      style: GoogleFonts.jost(
+                        color: AppColors.textMuted,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'for ${widget.vehicleNumber}',
+                      style: GoogleFonts.jost(
+                        color: AppColors.textMuted,
+                        fontSize: 13,
+                      ),
                     ),
                   ],
                 ),
               )
               : RefreshIndicator(
+                color: AppColors.gold,
                 onRefresh: _loadRecords,
                 child: ListView.builder(
                   padding: const EdgeInsets.all(16),
@@ -124,7 +158,6 @@ class _ServiceInfoScreenState extends State<ServiceInfoScreen> {
                         ) ??
                         {};
 
-                    // Calculate total price
                     double total = 0;
                     services.forEach((_, value) {
                       total += double.tryParse(value.toString()) ?? 0;
@@ -133,100 +166,187 @@ class _ServiceInfoScreenState extends State<ServiceInfoScreen> {
                     final createdAtText =
                         data['createdAt']?.toString().split('T').first ?? '-';
 
-                    return Card(
-                      elevation: 4,
-                      margin: const EdgeInsets.symmetric(vertical: 10),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceDark,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.borderGold),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.gold.withOpacity(0.05),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  "Service Date: $createdAtText",
-                                  style: const TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.green[100],
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: const Text(
-                                    "Finished",
-                                    style: TextStyle(
-                                      color: Colors.green,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const Divider(height: 20),
-                            _infoRow(
-                              "Previous Oil Change",
-                              data['previousOilChange'],
-                            ),
-                            _infoRow(
-                              "Next Service Date",
-                              data['nextServiceDate'],
-                            ),
-                            _infoRow(
-                              "Current Mileage",
-                              "${data['currentMileage'] ?? '-'} km",
-                            ),
-                            const SizedBox(height: 10),
-                            const Text(
-                              "Services Done:",
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(height: 5),
-                            ...services.entries.map(
-                              (entry) => Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 2,
-                                ),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Expanded(child: Text("• ${entry.key}")),
-                                    Text(
-                                      "Rs. ${entry.value}",
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w500,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: IntrinsicHeight(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // ── Green left strip ──────────────────────
+                              Container(width: 4, color: AppColors.success),
+
+                              // ── Card content ──────────────────────────
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      // Header
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            'Service Date: $createdAtText',
+                                            style: GoogleFonts.jost(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                              color: AppColors.textPrimary,
+                                            ),
+                                          ),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 10,
+                                              vertical: 4,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: AppColors.success
+                                                  .withOpacity(0.1),
+                                              border: Border.all(
+                                                color: AppColors.success,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                            ),
+                                            child: Text(
+                                              'FINISHED',
+                                              style: GoogleFonts.jost(
+                                                color: AppColors.success,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 10,
+                                                letterSpacing: 1.2,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                    ),
-                                  ],
+
+                                      Container(
+                                        height: 1,
+                                        margin: const EdgeInsets.symmetric(
+                                          vertical: 12,
+                                        ),
+                                        color: AppColors.borderGold,
+                                      ),
+
+                                      _infoRow(
+                                        'Previous Oil Change',
+                                        data['previousOilChange'],
+                                      ),
+                                      const SizedBox(height: 6),
+                                      _infoRow(
+                                        'Next Service Date',
+                                        data['nextServiceDate'],
+                                      ),
+                                      const SizedBox(height: 6),
+                                      _infoRow(
+                                        'Current Mileage',
+                                        '${data['currentMileage'] ?? '-'} km',
+                                      ),
+
+                                      const SizedBox(height: 16),
+                                      luxuryLabel('Services Done'),
+                                      const SizedBox(height: 8),
+
+                                      ...services.entries.map(
+                                        (entry) => Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 4,
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Expanded(
+                                                child: Text(
+                                                  '• ${entry.key}',
+                                                  style: GoogleFonts.jost(
+                                                    fontSize: 13,
+                                                    color:
+                                                        AppColors.textSecondary,
+                                                  ),
+                                                ),
+                                              ),
+                                              Text(
+                                                'Rs. ${entry.value}',
+                                                style: GoogleFonts.jost(
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: AppColors.textPrimary,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+
+                                      // Total
+                                      Container(
+                                        margin: const EdgeInsets.only(top: 12),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 10,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.gold.withOpacity(
+                                            0.08,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                          border: Border.all(
+                                            color: AppColors.gold.withOpacity(
+                                              0.3,
+                                            ),
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              'TOTAL',
+                                              style: GoogleFonts.jost(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w700,
+                                                letterSpacing: 1.5,
+                                                color: AppColors.gold,
+                                              ),
+                                            ),
+                                            Text(
+                                              'Rs. ${total.toStringAsFixed(2)}',
+                                              style:
+                                                  GoogleFonts.cormorantGaramond(
+                                                    fontSize: 20,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: AppColors.gold,
+                                                  ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
-                            const Divider(height: 16),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                Text(
-                                  "Total: Rs. ${total.toStringAsFixed(2)}",
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 15,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     );
@@ -237,23 +357,22 @@ class _ServiceInfoScreenState extends State<ServiceInfoScreen> {
   }
 
   Widget _infoRow(String label, dynamic value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "$label: ",
-            style: const TextStyle(color: Colors.grey, fontSize: 13),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.jost(fontSize: 12, color: AppColors.textSecondary),
+        ),
+        Text(
+          value?.toString() ?? '-',
+          style: GoogleFonts.jost(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
           ),
-          Expanded(
-            child: Text(
-              value?.toString() ?? '-',
-              style: const TextStyle(fontSize: 13),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

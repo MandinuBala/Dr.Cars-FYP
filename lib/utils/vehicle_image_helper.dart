@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:dr_cars_fyp/theme/app_theme.dart';
 
 class VehicleImageHelper {
   static const Map<String, String> _vehicleImages = {
     // Toyota
     'toyota_corolla': 'images/vehicles/toyota_corolla.jpg',
-    'toyota_camry': 'images/vehicles/toyota_camry.jpg', 
+    'toyota_camry': 'images/vehicles/toyota_camry.jpg',
     'toyota_rav4': 'images/vehicles/toyota_rav4.jpg',
     'toyota_aqua': 'images/vehicles/toyota_aqua.jpg',
     'toyota_prius': 'images/vehicles/toyota_prius.jpg',
@@ -60,15 +61,15 @@ class VehicleImageHelper {
     String? model,
     String? photoUrl,
     double size = 50,
-    Color backgroundColor = Colors.white,
+    Color backgroundColor = AppColors.surfaceDark,
   }) {
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surfaceDark,
         shape: BoxShape.circle,
-        border: Border.all(color: Colors.grey.shade200, width: 1),
+        border: Border.all(color: AppColors.borderGold, width: 1),
       ),
       clipBehavior: Clip.antiAlias,
       child:
