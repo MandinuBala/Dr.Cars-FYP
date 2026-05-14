@@ -1138,7 +1138,7 @@ app.patch("/users/:id/password", async (req, res) => {
 // Upload document photo
 app.post('/documents/upload', documentUpload.single('photo'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-  const url = `http://192.168.1.21:5000/documents/${req.file.filename}`;
+  const url = `${process.env.BASE_URL || 'http://localhost:5000'}/documents/${req.file.filename}`;
   res.json({ url });
 });
 
@@ -1183,6 +1183,6 @@ app.delete('/vehicle-documents/:id', async (req, res) => {
   }
 });
 
-app.listen(5000, () => {
+app.listen(process.env.PORT || 5000, () => {
   console.log("Server running on port 5000");
 });
