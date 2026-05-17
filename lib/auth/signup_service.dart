@@ -35,27 +35,107 @@ class _ServiceCenterRequestScreenState
   String? _selectedCity;
 
   final List<String> _cities = [
-    'Colombo', 'Dehiwala', 'Moratuwa', 'Nugegoda', 'Homagama',
-    'Piliyandala', 'Battaramulla', 'Gampaha', 'Negombo', 'Ja-Ela',
-    'Wattala', 'Ragama', 'Katunayake', 'Kalutara', 'Panadura',
-    'Beruwala', 'Horana', 'Aluthgama', 'Matugama', 'Kandy',
-    'Peradeniya', 'Katugastota', 'Gampola', 'Nawalapitiya', 'Matale',
-    'Dambulla', 'Ukuwela', 'Rattota', 'Nuwara Eliya', 'Hatton',
-    'Talawakele', 'Nanu Oya', 'Galle', 'Unawatuna', 'Ambalangoda',
-    'Hikkaduwa', 'Matara', 'Weligama', 'Akurassa', 'Dikwella',
-    'Hambantota', 'Tangalle', 'Tissamaharama', 'Ambalantota', 'Jaffna',
-    'Point Pedro', 'Chavakachcheri', 'Nallur', 'Kilinochchi', 'Pallai',
-    'Paranthan', 'Mannar', 'Thalaimannar', 'Pesalai', 'Vavuniya',
-    'Cheddikulam', 'Nedunkeni', 'Mullaitivu', 'Puthukkudiyiruppu',
-    'Oddusuddan', 'Batticaloa', 'Eravur', 'Kattankudy', 'Ampara',
-    'Kalmunai', 'Sammanthurai', 'Akkaraipattu', 'Trincomalee',
-    'Kinniya', 'Mutur', 'Kuchchaveli', 'Kurunegala', 'Pannala',
-    'Nikaweratiya', 'Kuliyapitiya', 'Puttalam', 'Wennappuwa', 'Chilaw',
-    'Anamaduwa', 'Anuradhapura', 'Kekirawa', 'Medawachchiya',
-    'Mihintale', 'Polonnaruwa', 'Hingurakgoda', 'Medirigiriya',
-    'Badulla', 'Bandarawela', 'Hali-Ela', 'Diyatalawa', 'Monaragala',
-    'Wellawaya', 'Bibile', 'Buttala', 'Ratnapura', 'Balangoda',
-    'Eheliyagoda', 'Kuruwita', 'Kegalle', 'Mawanella', 'Rambukkana',
+    'Colombo',
+    'Dehiwala',
+    'Moratuwa',
+    'Nugegoda',
+    'Homagama',
+    'Piliyandala',
+    'Battaramulla',
+    'Gampaha',
+    'Negombo',
+    'Ja-Ela',
+    'Wattala',
+    'Ragama',
+    'Katunayake',
+    'Kalutara',
+    'Panadura',
+    'Beruwala',
+    'Horana',
+    'Aluthgama',
+    'Matugama',
+    'Kandy',
+    'Peradeniya',
+    'Katugastota',
+    'Gampola',
+    'Nawalapitiya',
+    'Matale',
+    'Dambulla',
+    'Ukuwela',
+    'Rattota',
+    'Nuwara Eliya',
+    'Hatton',
+    'Talawakele',
+    'Nanu Oya',
+    'Galle',
+    'Unawatuna',
+    'Ambalangoda',
+    'Hikkaduwa',
+    'Matara',
+    'Weligama',
+    'Akurassa',
+    'Dikwella',
+    'Hambantota',
+    'Tangalle',
+    'Tissamaharama',
+    'Ambalantota',
+    'Jaffna',
+    'Point Pedro',
+    'Chavakachcheri',
+    'Nallur',
+    'Kilinochchi',
+    'Pallai',
+    'Paranthan',
+    'Mannar',
+    'Thalaimannar',
+    'Pesalai',
+    'Vavuniya',
+    'Cheddikulam',
+    'Nedunkeni',
+    'Mullaitivu',
+    'Puthukkudiyiruppu',
+    'Oddusuddan',
+    'Batticaloa',
+    'Eravur',
+    'Kattankudy',
+    'Ampara',
+    'Kalmunai',
+    'Sammanthurai',
+    'Akkaraipattu',
+    'Trincomalee',
+    'Kinniya',
+    'Mutur',
+    'Kuchchaveli',
+    'Kurunegala',
+    'Pannala',
+    'Nikaweratiya',
+    'Kuliyapitiya',
+    'Puttalam',
+    'Wennappuwa',
+    'Chilaw',
+    'Anamaduwa',
+    'Anuradhapura',
+    'Kekirawa',
+    'Medawachchiya',
+    'Mihintale',
+    'Polonnaruwa',
+    'Hingurakgoda',
+    'Medirigiriya',
+    'Badulla',
+    'Bandarawela',
+    'Hali-Ela',
+    'Diyatalawa',
+    'Monaragala',
+    'Wellawaya',
+    'Bibile',
+    'Buttala',
+    'Ratnapura',
+    'Balangoda',
+    'Eheliyagoda',
+    'Kuruwita',
+    'Kegalle',
+    'Mawanella',
+    'Rambukkana',
     'Warakapola',
   ];
 
@@ -78,7 +158,7 @@ class _ServiceCenterRequestScreenState
   Future<bool> _checkDuplicate(String field, String value) async {
     final response = await http.get(
       Uri.parse(
-        'http://192.168.1.21:5000/api/service/check?field=$field&value=$value',
+        'https://drcars-fyp-production.up.railway.app/api/service/check?field=$field&value=$value',
       ),
     );
     if (response.statusCode == 200) {
@@ -100,15 +180,21 @@ class _ServiceCenterRequestScreenState
     try {
       final emailExists = await _checkDuplicate('Email', email);
       final usernameExists = await _checkDuplicate('Username', username);
-      final centerExists =
-          await _checkDuplicate('serviceCenterName', centerName);
+      final centerExists = await _checkDuplicate(
+        'serviceCenterName',
+        centerName,
+      );
 
-      if (centerExists) return _showError('This service center name is already in use.');
-      if (emailExists) return _showError('This email address is already in use.');
+      if (centerExists)
+        return _showError('This service center name is already in use.');
+      if (emailExists)
+        return _showError('This email address is already in use.');
       if (usernameExists) return _showError('This username is already in use.');
 
       final response = await http.post(
-        Uri.parse('http://192.168.1.21:5000/api/service/request'),
+        Uri.parse(
+          'https://drcars-fyp-production.up.railway.app/api/service/request',
+        ),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'serviceCenterName': centerName,
@@ -129,52 +215,53 @@ class _ServiceCenterRequestScreenState
         if (mounted) {
           showDialog(
             context: context,
-            builder: (_) => AlertDialog(
-              backgroundColor: AppColors.surfaceDark,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: const BorderSide(color: AppColors.borderGold),
-              ),
-              title: Text(
-                'Request Submitted',
-                style: GoogleFonts.cormorantGaramond(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              content: Text(
-                'Your request has been submitted. Please wait while the app admin reviews and approves your service center account.',
-                style: GoogleFonts.jost(
-                  color: AppColors.textSecondary,
-                  fontSize: 14,
-                  height: 1.5,
-                ),
-              ),
-              actions: [
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      Navigator.of(context).pop();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.gold,
-                      foregroundColor: AppColors.obsidian,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: Text(
-                      'OK',
-                      style: GoogleFonts.jost(fontWeight: FontWeight.w700),
+            builder:
+                (_) => AlertDialog(
+                  backgroundColor: AppColors.surfaceDark,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    side: const BorderSide(color: AppColors.borderGold),
+                  ),
+                  title: Text(
+                    'Request Submitted',
+                    style: GoogleFonts.cormorantGaramond(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
                     ),
                   ),
+                  content: Text(
+                    'Your request has been submitted. Please wait while the app admin reviews and approves your service center account.',
+                    style: GoogleFonts.jost(
+                      color: AppColors.textSecondary,
+                      fontSize: 14,
+                      height: 1.5,
+                    ),
+                  ),
+                  actions: [
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          Navigator.of(context).pop();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.gold,
+                          foregroundColor: AppColors.obsidian,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: Text(
+                          'OK',
+                          style: GoogleFonts.jost(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
           );
           _formKey.currentState!.reset();
         }
@@ -193,10 +280,7 @@ class _ServiceCenterRequestScreenState
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: AppColors.error,
-        content: Text(
-          message,
-          style: GoogleFonts.jost(color: Colors.white),
-        ),
+        content: Text(message, style: GoogleFonts.jost(color: Colors.white)),
       ),
     );
   }
@@ -231,9 +315,10 @@ class _ServiceCenterRequestScreenState
     bool required = true,
     String? Function(String?)? validator,
   }) {
-    final isObscure = isPassword
-        ? !_showPassword
-        : isConfirmPassword
+    final isObscure =
+        isPassword
+            ? !_showPassword
+            : isConfirmPassword
             ? !_showConfirmPassword
             : false;
 
@@ -243,43 +328,38 @@ class _ServiceCenterRequestScreenState
         controller: controller,
         obscureText: isObscure,
         maxLines: isPassword || isConfirmPassword ? 1 : maxLines,
-        style: GoogleFonts.jost(
-          color: AppColors.textPrimary,
-          fontSize: 14,
-        ),
+        style: GoogleFonts.jost(color: AppColors.textPrimary, fontSize: 14),
         decoration: InputDecoration(
           hintText: label,
-          hintStyle: GoogleFonts.jost(
-            color: AppColors.textMuted,
-            fontSize: 14,
-          ),
+          hintStyle: GoogleFonts.jost(color: AppColors.textMuted, fontSize: 14),
           filled: true,
           fillColor: AppColors.surfaceElevated,
           prefixIcon: Icon(icon, color: AppColors.gold, size: 20),
-          suffixIcon: isPassword
-              ? IconButton(
-                  icon: Icon(
-                    _showPassword
-                        ? Icons.visibility
-                        : Icons.visibility_off,
-                    color: AppColors.textSecondary,
-                    size: 20,
-                  ),
-                  onPressed: () =>
-                      setState(() => _showPassword = !_showPassword),
-                )
-              : isConfirmPassword
+          suffixIcon:
+              isPassword
                   ? IconButton(
-                      icon: Icon(
-                        _showConfirmPassword
-                            ? Icons.visibility
-                            : Icons.visibility_off,
-                        color: AppColors.textSecondary,
-                        size: 20,
-                      ),
-                      onPressed: () => setState(
-                          () => _showConfirmPassword = !_showConfirmPassword),
-                    )
+                    icon: Icon(
+                      _showPassword ? Icons.visibility : Icons.visibility_off,
+                      color: AppColors.textSecondary,
+                      size: 20,
+                    ),
+                    onPressed:
+                        () => setState(() => _showPassword = !_showPassword),
+                  )
+                  : isConfirmPassword
+                  ? IconButton(
+                    icon: Icon(
+                      _showConfirmPassword
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                      color: AppColors.textSecondary,
+                      size: 20,
+                    ),
+                    onPressed:
+                        () => setState(
+                          () => _showConfirmPassword = !_showConfirmPassword,
+                        ),
+                  )
                   : null,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
@@ -291,8 +371,7 @@ class _ServiceCenterRequestScreenState
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide:
-                const BorderSide(color: AppColors.gold, width: 1.5),
+            borderSide: const BorderSide(color: AppColors.gold, width: 1.5),
           ),
           errorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
@@ -303,14 +382,15 @@ class _ServiceCenterRequestScreenState
             vertical: 14,
           ),
         ),
-        validator: validator ??
+        validator:
+            validator ??
             (required
                 ? (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'This field is required';
-                    }
-                    return null;
+                  if (value == null || value.trim().isEmpty) {
+                    return 'This field is required';
                   }
+                  return null;
+                }
                 : null),
       ),
     );
@@ -330,26 +410,25 @@ class _ServiceCenterRequestScreenState
         child: DropdownButtonFormField<String>(
           value: _selectedCity,
           isExpanded: true,
-          style: GoogleFonts.jost(
-            color: AppColors.textPrimary,
-            fontSize: 14,
-          ),
+          style: GoogleFonts.jost(color: AppColors.textPrimary, fontSize: 14),
           dropdownColor: AppColors.surfaceElevated,
           icon: const Icon(
             Icons.keyboard_arrow_down_rounded,
             color: AppColors.gold,
           ),
-          selectedItemBuilder: (context) => sortedCities
-              .map(
-                (city) => Text(
-                  city,
-                  style: GoogleFonts.jost(
-                    color: AppColors.textPrimary,
-                    fontSize: 14,
-                  ),
-                ),
-              )
-              .toList(),
+          selectedItemBuilder:
+              (context) =>
+                  sortedCities
+                      .map(
+                        (city) => Text(
+                          city,
+                          style: GoogleFonts.jost(
+                            color: AppColors.textPrimary,
+                            fontSize: 14,
+                          ),
+                        ),
+                      )
+                      .toList(),
           decoration: InputDecoration(
             hintText: 'Select City',
             hintStyle: GoogleFonts.jost(
@@ -376,22 +455,22 @@ class _ServiceCenterRequestScreenState
               vertical: 14,
             ),
           ),
-          items: sortedCities
-              .map(
-                (city) => DropdownMenuItem(
-                  value: city,
-                  child: Text(
-                    city,
-                    style: GoogleFonts.jost(
-                      color: AppColors.textPrimary,
-                      fontSize: 14,
+          items:
+              sortedCities
+                  .map(
+                    (city) => DropdownMenuItem(
+                      value: city,
+                      child: Text(
+                        city,
+                        style: GoogleFonts.jost(
+                          color: AppColors.textPrimary,
+                          fontSize: 14,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              )
-              .toList(),
-          validator: (value) =>
-              value == null ? 'Please select a city' : null,
+                  )
+                  .toList(),
+          validator: (value) => value == null ? 'Please select a city' : null,
           onChanged: (value) => setState(() => _selectedCity = value),
         ),
       ),
@@ -543,24 +622,25 @@ class _ServiceCenterRequestScreenState
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: _isSubmitting
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            color: AppColors.obsidian,
-                            strokeWidth: 2,
+                  child:
+                      _isSubmitting
+                          ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              color: AppColors.obsidian,
+                              strokeWidth: 2,
+                            ),
+                          )
+                          : Text(
+                            'SUBMIT REQUEST',
+                            style: GoogleFonts.jost(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.5,
+                              color: AppColors.obsidian,
+                            ),
                           ),
-                        )
-                      : Text(
-                          'SUBMIT REQUEST',
-                          style: GoogleFonts.jost(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.5,
-                            color: AppColors.obsidian,
-                          ),
-                        ),
                 ),
               ),
 

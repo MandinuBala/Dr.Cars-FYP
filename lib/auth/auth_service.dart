@@ -17,9 +17,7 @@ class AuthService {
 
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
-        // Physical Android devices should use host LAN IP by default.
-        // For emulator use: --dart-define=API_BASE_URL=http://10.0.2.2:5000
-        return 'http://192.168.1.21:5000';
+        return 'https://drcars-fyp-production.up.railway.app';
       case TargetPlatform.iOS:
       case TargetPlatform.macOS:
       case TargetPlatform.windows:
